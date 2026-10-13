@@ -19,6 +19,7 @@ function placeOf0(raw){let s=String(raw||"").trim();if(!s)return {t:"",c:""};
 const pl=w=>{const p=placeOf(w.place,w.place_label);return p.t+(p.c?" · "+p.c:"")};
 const word=w=>`<div class="w" onclick="openWord('${w.user_word_id}')"><span class="art ${w.pos==="verb"?"verb":(w.article||"")}">${w.pos==="verb"?"verb":esc(w.article||"")}</span><div class="t"><b>${esc(w.syllables||w.lemma)}</b><small>${esc(w.translation)}${sounds(w)?" · "+sounds(w):""}${w.place?" · 📍 "+esc(placeOf(w.place,w.place_label).t):""}</small></div><span style="color:${dot(w)}">●</span></div>`;
 function md(s){return esc(s).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/🟡\s?([^\s.,!?;:]+)/g,"<b>$1</b>").split(/\n{2,}/).map(p=>"<p>"+p.replace(/\n/g,"<br>")+"</p>").join("")}
+const zid=k=>{const z=(D.zones||[]).find(x=>x.kind===k);return z?z.id:""};
 function zoneTiles(){const g={};D.words.forEach(w=>{const k=kindOf(w);(g[k]=g[k]||[]).push(w)});
  return `<div class="grid">${Object.keys(ZK).map(k=>{const ws=g[k]||[],z=ZK[k],dn=ws.filter(isDue).length,zn=D.zones.find(x=>x.kind===k);const pct=ws.length?Math.round(100*ws.filter(w=>!isDue(w)).length/ws.length):0;
  return `<div class="tile" onclick="openZone('${k}')" style="background:linear-gradient(150deg,${z[3]});${k==="verb"?"color:#1a1300":""}"><div style="font-size:24px">${z[0]} ${z[1]}</div><div><b>${z[2]}</b><small>${zn?esc(zn.name)+" · ":""}${ws.length} слов${dn?" · ⏰"+dn:""}</small><div class="bar"><i style="width:${pct}%;${k==="verb"?"background:#1a1300":""}"></i></div></div></div>`}).join("")}</div>`}
@@ -31,7 +32,8 @@ ${due.length?`<div class="card"><h3>Сегодня к повторению · ${
 <div class="tabs"><div class="tab ${homeTab==="zones"?"on":""}" onclick="homeTab='zones';render()">Город</div><div class="tab ${homeTab==="eps"?"on":""}" onclick="homeTab='eps';render()">Серии</div></div>
 ${homeTab==="zones"?zoneTiles():(D.episodes.slice().reverse().map(epCard).join("")||'<div class="empty">Серий пока нет</div>')}`},
 city(){return `<div class="top"><b style="font-size:24px">${esc(D.city)}</b><div class="chip">${D.words.length} мест</div></div>${zoneTiles()}
-${Object.keys(ZK).map(k=>{const ws=D.words.filter(w=>kindOf(w)===k).sort((a,b)=>(a.chain_order??0)-(b.chain_order??0));return ws.length?`<div class="card" id="z-${k}" style="margin-top:12px"><h3>${ZK[k][0]} ${ZK[k][2]}</h3>${ws.map(word).join("")}</div>`:""}).join("")}
+<div class="card" style="margin-top:12px" onclick="go('city')"><div class="w"><div class="t"><b>✏️ Добавить или поправить детали</b><small>места, названия, забытые подробности — без анкеты</small></div>›</div></div>
+${Object.keys(ZK).map(k=>{const ws=D.words.filter(w=>kindOf(w)===k).sort((a,b)=>(a.chain_order??0)-(b.chain_order??0));return ws.length?`<div class="card" id="z-${k}" style="margin-top:12px"><h3 style="display:flex;justify-content:space-between">${ZK[k][0]} ${ZK[k][2]}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️ Править</span>`:""}</h3>${ws.map(word).join("")}</div>`:""}).join("")}
 <p style="color:var(--mut);font-size:12px;text-align:center"><span style="color:var(--grn)">●</span> помню · <span style="color:var(--gold)">●</span> скоро · <span style="color:var(--red)">●</span> пора повторить</p>`},
 eps(){return `<div class="top"><b style="font-size:24px">Мои серии</b><div class="chip" onclick="go('topic')">▶️ Новая</div></div>${D.episodes.slice().reverse().map(epCard).join("")||'<div class="empty">Серий пока нет</div>'}`},
 ep(){const e=D.episodes.find(x=>x.id===epId);if(!e)return V.eps();return `<div class="top"><div style="font-size:26px;cursor:pointer" onclick="nav('eps')">‹</div><b>${esc(e.title)}</b><div></div></div>
@@ -47,7 +49,7 @@ word(){const w=wl[wi];if(!w)return V.home();const k=kindOf(w),col={der:"#7aa6ff"
  return `<div class="top"><div style="font-size:26px;cursor:pointer" onclick="back()">‹</div><div class="chip">${wi+1} / ${wl.length}</div><div style="font-size:26px;cursor:pointer" onclick="say()">🔊</div></div>
 <div class="hero" style="text-align:center;padding:28px 18px"><div style="color:${col};font-weight:700;font-size:20px">${esc(w.pos==="verb"?"глагол":w.article||"")}</div>
 <div class="big" style="font-size:46px;color:${col}">${esc(w.lemma)}</div><div style="font-size:20px;color:#cfcfda">${esc(w.syllables||w.lemma)}</div><div style="margin-top:8px;font-size:18px">${esc(w.translation)}${w.plural?` <span style="color:var(--mut)">· мн. ${esc(w.plural)}</span>`:""}</div></div>
-<div class="card" style="margin-top:12px"><h3>📍 ${esc(p.t||"Место ещё не выбрано")}</h3>${p.c?`<small style="color:var(--mut)">${esc(p.c)}</small>`:""}
+<div class="card" style="margin-top:12px"><h3 style="display:flex;justify-content:space-between">📍 ${esc(p.t||"Место ещё не выбрано")}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️</span>`:""}</h3>${p.c?`<small style="color:var(--mut)">${esc(p.c)}</small>`:""}
 ${sounds(w)?`<div style="margin-top:10px;font-size:17px">🔤 ${esc(w.syllables||w.lemma)} → ${sounds(w)}</div>`:""}</div>
 ${w.image?`<div class="card story"><h3>🎬 Образ</h3><p>${esc(w.image)}</p></div>`:""}
 <div class="card"><div class="w"><div class="t"><b>${dd}</b><small>повторений: ${w.reps||0} · интервал ${w.interval_days||0} дн.</small></div><span style="color:${dot(w)}">●</span></div></div>
