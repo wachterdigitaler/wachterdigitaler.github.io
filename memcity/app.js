@@ -1,14 +1,23 @@
 const API="https://wbrpcvbpipeejdnsymdz.supabase.co/functions/v1/memcity-app", BOT="fixDeutsch_bot";
 const tg=window.Telegram&&Telegram.WebApp; if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#0b0b0f");tg.setBackgroundColor("#0b0b0f")}catch(e){}}
 const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let D=null, tab="home", epId=null, q="", homeTab="zones";
+let D=null, wl=[], wi=0, prev="home", tab="home", epId=null, q="", homeTab="zones";
 const ZK={der:["🔵","der","Мужской район","#2d6cff,#1a3d99"],die:["🔴","die","Женский район","#ff5d8a,#a3244c"],das:["🟢","das","Средний район","#22c58b,#0e7a55"],verb:["🟡","глаголы","Улица действий","#f5c542,#b07d00"]};
 const kindOf=w=>w.pos==="verb"?"verb":(w.article||w.zone_kind||"das");
 const isDue=w=>w.due_at&&Date.parse(w.due_at)<=Date.now();
 const dot=w=>isDue(w)?"var(--red)":(w.due_at&&Date.parse(w.due_at)-Date.now()<2*864e5?"var(--gold)":"var(--grn)");
 const sounds=w=>(Array.isArray(w.sounds)?w.sounds:[]).map(s=>"«"+esc(s)+"»").join(" + ");
 const go=p=>{ if(tg&&tg.openTelegramLink){tg.openTelegramLink(`https://t.me/${BOT}?start=${p}`);setTimeout(()=>tg.close(),300)} else location.href=`https://t.me/${BOT}?start=${p}` };
-const word=w=>`<div class="w"><span class="art ${w.pos==="verb"?"verb":(w.article||"")}">${w.pos==="verb"?"verb":esc(w.article||"")}</span><div class="t"><b>${esc(w.syllables||w.lemma)}</b><small>${esc(w.translation)}${sounds(w)?" · "+sounds(w):""}${w.place?" · 📍 "+esc(w.place):""}</small></div><span style="color:${dot(w)}">●</span></div>`;
+function placeOf(raw,lab){if(lab&&typeof raw!=="object"){const p0=placeOf0(raw);return {t:lab,c:p0.t!==lab?p0.c:p0.c}}return placeOf0(raw)}
+function placeOf0(raw){let s=String(raw||"").trim();if(!s)return {t:"",c:""};
+ s=s.replace(/^(зона|zona)\s+\S+,\s*/i,"").replace(/\s*\(без рода\)/i,"");
+ let ctx="";const ci=s.indexOf(":");if(ci>0){ctx=s.slice(0,ci);s=s.slice(ci+1)}else{const p=s.split(/,\s*/);if(p.length>1){s=p.pop();if(/^где\s/i.test(s)&&p.length>1)s=p.pop();ctx=p.join(", ")}}
+ const fix=x=>x.replace(/^(я\s+)?(жил|жила|живу)\s+в\s+/i,"").replace(/^(второе|третье|первое)\s+место\s+(это\s+)?/i,"").replace(/^пускай\s+это\s+будет\s+/i,"").replace(/\s+я\s+буду.*$/i,"")
+  .replace(/^(\S+)\s+был[аио]?\s+не\s*большой/i,"небольшой $1").replace(/с\s+парой\s+качель/i,"с качелями").replace(/^(\\S+)ой\\s+квартире/i,"$1ая квартира").replace(/^(\S+)ой\s+квартире/i,"$1ая квартира").replace(/^заходили\s+в\s+/i,"").trim();
+ const cut=x=>x.length>42?x.slice(0,40).replace(/\s+\S*$/,"")+"…":x, cap=x=>x?x[0].toUpperCase()+x.slice(1):x;
+ return {t:cap(cut(fix(s))),c:cut(fix(ctx))}}
+const pl=w=>{const p=placeOf(w.place,w.place_label);return p.t+(p.c?" · "+p.c:"")};
+const word=w=>`<div class="w" onclick="openWord('${w.user_word_id}')"><span class="art ${w.pos==="verb"?"verb":(w.article||"")}">${w.pos==="verb"?"verb":esc(w.article||"")}</span><div class="t"><b>${esc(w.syllables||w.lemma)}</b><small>${esc(w.translation)}${sounds(w)?" · "+sounds(w):""}${w.place?" · 📍 "+esc(placeOf(w.place,w.place_label).t):""}</small></div><span style="color:${dot(w)}">●</span></div>`;
 function md(s){return esc(s).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/🟡\s?([^\s.,!?;:]+)/g,"<b>$1</b>").split(/\n{2,}/).map(p=>"<p>"+p.replace(/\n/g,"<br>")+"</p>").join("")}
 function zoneTiles(){const g={};D.words.forEach(w=>{const k=kindOf(w);(g[k]=g[k]||[]).push(w)});
  return `<div class="grid">${Object.keys(ZK).map(k=>{const ws=g[k]||[],z=ZK[k],dn=ws.filter(isDue).length,zn=D.zones.find(x=>x.kind===k);const pct=ws.length?Math.round(100*ws.filter(w=>!isDue(w)).length/ws.length):0;
@@ -26,21 +35,38 @@ ${Object.keys(ZK).map(k=>{const ws=D.words.filter(w=>kindOf(w)===k).sort((a,b)=>
 <p style="color:var(--mut);font-size:12px;text-align:center"><span style="color:var(--grn)">●</span> помню · <span style="color:var(--gold)">●</span> скоро · <span style="color:var(--red)">●</span> пора повторить</p>`},
 eps(){return `<div class="top"><b style="font-size:24px">Мои серии</b><div class="chip" onclick="go('topic')">▶️ Новая</div></div>${D.episodes.slice().reverse().map(epCard).join("")||'<div class="empty">Серий пока нет</div>'}`},
 ep(){const e=D.episodes.find(x=>x.id===epId);if(!e)return V.eps();return `<div class="top"><div style="font-size:26px;cursor:pointer" onclick="nav('eps')">‹</div><b>${esc(e.title)}</b><div></div></div>
-<div class="card map"><h3>🗺 Карта серии</h3>${e.words.map(w=>`<div>${isDue(w)?"⏰ ":""}📍 ${esc(w.place||"—")} — <b>${esc((w.article?w.article+" ":"")+w.lemma)}</b> (${esc(w.translation)}) · ${esc(w.syllables||w.lemma)}${sounds(w)?" → "+sounds(w):""}</div>`).join("")}</div>
+<div class="card map"><h3>🗺 Карта серии</h3>${e.words.map(w=>`<div>${isDue(w)?"⏰ ":""}📍 ${esc(placeOf(w.place,w.place_label).t||"—")} — <b onclick="openWord(\'${w.user_word_id}\')" style="text-decoration:underline dotted">${esc((w.article?w.article+" ":"")+w.lemma)}</b> (${esc(w.translation)}) · ${esc(w.syllables||w.lemma)}${sounds(w)?" → "+sounds(w):""}</div>`).join("")}</div>
 <div class="card story">${md(e.body)}</div>
 <div class="seg"><span class="chip" onclick="go('st_${e.id}')">🧠 Проверить себя</span><span class="chip" onclick="go('st_${e.id}')">✍️ Переписать</span><span class="chip" onclick="go('st_${e.id}')">🔊 Озвучить</span></div>
 <button class="btn" onclick="go('review')">🔁 Повторить слова этой серии</button>`},
 dict(){const ws=D.words.filter(w=>!q||(w.lemma+" "+w.translation).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>a.lemma.localeCompare(b.lemma,"de"));
  return `<div class="top"><b style="font-size:24px">Словарь</b><div class="chip">${D.words.length}</div></div><input class="srch" placeholder="Поиск: слово или перевод" value="${esc(q)}" oninput="q=this.value;const c=this.selectionStart;render();const i=$('.srch');i.focus();i.setSelectionRange(c,c)">
-<div class="card">${ws.map(w=>`<div onclick="${w.story_id?`openEp('${w.story_id}')`:""}">${word(w)}</div>`).join("")||'<div class="empty">Ничего не найдено</div>'}</div>`},
+<div class="card">${ws.map(word).join("")||'<div class="empty">Ничего не найдено</div>'}</div>`},
+word(){const w=wl[wi];if(!w)return V.home();const k=kindOf(w),col={der:"#7aa6ff",die:"#ff8fb0",das:"#6ff0a8",verb:"#f5c542"}[k];const p=placeOf(w.place,w.place_label);
+ const due=w.due_at?new Date(w.due_at):null,dd=due&&due.getFullYear()<2090?(isDue(w)?"пора повторить ⏰":"следующее повторение "+due.toLocaleDateString("ru-RU",{day:"numeric",month:"long"})):"ещё не повторялось";
+ return `<div class="top"><div style="font-size:26px;cursor:pointer" onclick="back()">‹</div><div class="chip">${wi+1} / ${wl.length}</div><div style="font-size:26px;cursor:pointer" onclick="say()">🔊</div></div>
+<div class="hero" style="text-align:center;padding:28px 18px"><div style="color:${col};font-weight:700;font-size:20px">${esc(w.pos==="verb"?"глагол":w.article||"")}</div>
+<div class="big" style="font-size:46px;color:${col}">${esc(w.lemma)}</div><div style="font-size:20px;color:#cfcfda">${esc(w.syllables||w.lemma)}</div><div style="margin-top:8px;font-size:18px">${esc(w.translation)}${w.plural?` <span style="color:var(--mut)">· мн. ${esc(w.plural)}</span>`:""}</div></div>
+<div class="card" style="margin-top:12px"><h3>📍 ${esc(p.t||"Место ещё не выбрано")}</h3>${p.c?`<small style="color:var(--mut)">${esc(p.c)}</small>`:""}
+${sounds(w)?`<div style="margin-top:10px;font-size:17px">🔤 ${esc(w.syllables||w.lemma)} → ${sounds(w)}</div>`:""}</div>
+${w.image?`<div class="card story"><h3>🎬 Образ</h3><p>${esc(w.image)}</p></div>`:""}
+<div class="card"><div class="w"><div class="t"><b>${dd}</b><small>повторений: ${w.reps||0} · интервал ${w.interval_days||0} дн.</small></div><span style="color:${dot(w)}">●</span></div></div>
+<div class="seg">${w.story_id?`<span class="chip" onclick="openEp('${w.story_id}')">📖 Вся серия</span><span class="chip" onclick="go('st_${w.story_id}')">✏️ Переписать</span>`:""}<span class="chip" onclick="step(-1)">← Пред.</span><span class="chip" onclick="step(1)">След. →</span></div>`},
 more(){return `<div class="top"><b style="font-size:24px">Ещё</b><div></div></div><div class="card">
 <div class="w" onclick="go('review')"><div class="t"><b>🔁 Повторение</b><small>карточки и перечитывание</small></div>›</div>
 <div class="w" onclick="go('topic')"><div class="t"><b>🎒 Наборы тем</b><small>выбрать тему для новой серии</small></div>›</div>
 <div class="w" onclick="go('series')"><div class="t"><b>💬 Открыть чат с ботом</b><small>все действия — в чате</small></div>›</div></div>`}};
 const NAV=[["home","🏠","Главная"],["eps","🎬","Серии"],["city","🏙","Город"],["dict","📖","Словарь"],["more","⋯","Ещё"]];
-function render(){$("#app").innerHTML=V[tab]();const nt=tab==="ep"?"eps":tab;$("#nav").innerHTML=NAV.map(([k,i,l])=>`<div class="${k===nt?"on":""}" onclick="nav('${k}')"><span>${i}</span>${l}</div>`).join("")}
+function openWord(id){const src=tab==="ep"?(D.episodes.find(e=>e.id===epId)||{words:[]}).words:tab==="dict"?D.words.slice().sort((a,b)=>a.lemma.localeCompare(b.lemma,"de")):tab==="home"?D.words.filter(isDue):D.words;
+ wl=src.length?src:D.words;wi=Math.max(0,wl.findIndex(w=>w.user_word_id===id));if(tab!=="word")prev=tab;nav("word")}
+function step(d){if(!wl.length)return;wi=(wi+d+wl.length)%wl.length;render();scrollTo(0,0)}
+function back(){nav(prev||"home")}
+function say(){const w=wl[wi];if(!w||!window.speechSynthesis)return;const u=new SpeechSynthesisUtterance((w.article?w.article+" ":"")+w.lemma);u.lang="de-DE";u.rate=.85;speechSynthesis.cancel();speechSynthesis.speak(u)}
+let tx=null;document.addEventListener("touchstart",e=>{tx=e.touches[0].clientX},{passive:true});document.addEventListener("touchend",e=>{if(tab!=="word"||tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>60)step(dx<0?1:-1);tx=null},{passive:true});
+if(tg&&tg.BackButton)tg.BackButton.onClick(()=>tab==="word"?back():tab==="ep"?nav("eps"):nav("home"));
+function render(){if(tg&&tg.BackButton){tab==="home"?tg.BackButton.hide():tg.BackButton.show()}$("#app").innerHTML=V[tab]();const nt=tab==="ep"?"eps":tab==="word"?prev:tab;$("#nav").innerHTML=NAV.map(([k,i,l])=>`<div class="${k===nt?"on":""}" onclick="nav('${k}')"><span>${i}</span>${l}</div>`).join("")}
 function nav(t){tab=t;render();scrollTo(0,0)} function openEp(id){epId=id;nav("ep")} function openZone(k){nav("city");setTimeout(()=>{const el=document.getElementById("z-"+k);el&&el.scrollIntoView({behavior:"smooth"})},50)}
 (async()=>{const init=tg&&tg.initData;if(!init){$("#app").innerHTML='<div class="load">Открой приложение из бота @'+BOT+'</div>';return}
  try{const r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({initData:init})});if(!r.ok)throw new Error(r.status);D=await r.json();
- const st=new URLSearchParams(location.search).get("screen");if(st)tab=st;if(tab==="ep")epId=D.episodes[0]&&D.episodes[0].id;render()}
+ const st=new URLSearchParams(location.search).get("screen");if(st)tab=st;if(tab==="ep")epId=D.episodes[0]&&D.episodes[0].id;if(tab==="word"){tab="home";render();openWord((D.words.find(isDue)||D.words[0]||{}).user_word_id);return}render()}
  catch(e){$("#app").innerHTML='<div class="load">Не получилось загрузить данные ('+esc(e.message)+'). Попробуй ещё раз.</div>'}})();
