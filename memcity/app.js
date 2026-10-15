@@ -6,7 +6,19 @@ const ZK={der:["🔵","der","Мужской район","#2d6cff,#1a3d99"],die:[
 const kindOf=w=>w.pos==="verb"?"verb":(w.article||w.zone_kind||"das");
 const isDue=w=>w.due_at&&Date.parse(w.due_at)<=Date.now();
 const dot=w=>isDue(w)?"var(--red)":(w.due_at&&Date.parse(w.due_at)-Date.now()<2*864e5?"var(--gold)":"var(--grn)");
-const sounds=w=>(Array.isArray(w.sounds)?w.sounds:[]).map(s=>"«"+esc(s)+"»").join(" + ");
+const sparts=a=>(Array.isArray(a)?a:[a]).flatMap(s=>String(s??"").split("+")).map(s=>s.trim()).filter(Boolean); // #134: «халат+усы» → «халат» + «усы»
+const qs=a=>sparts(a).map(s=>"«"+esc(s)+"»").join(" + ");
+const sounds=w=>qs(Array.isArray(w.sounds)?w.sounds:[]);
+const plr=(n,a,b,c)=>{n=Math.abs(n)%100;const m=n%10;return n>10&&n<20?c:m===1?a:m>=2&&m<=4?b:c};
+const dayDiff=d=>{const a=new Date(d),b=new Date();a.setHours(0,0,0,0);b.setHours(0,0,0,0);return Math.round((a-b)/864e5)};
+// #134: one consistent state line: «повторено 2 раза · следующее через 3 дня» / «новое слово · первое повторение завтра» / «пора повторить ⏰»
+function repLine(w){const n=w.reps||0,due=w.due_at?new Date(w.due_at):null,real=due&&due.getFullYear()<2090;
+ const done=n?`повторено ${n} ${plr(n,"раз","раза","раз")}`:"новое слово";
+ if(!real)return n?done:"ещё не повторялось";
+ if(isDue(w))return `${done} · пора повторить ⏰`;
+ const k=dayDiff(due),when=k<=0?"сегодня":k===1?"завтра":k===2?"послезавтра":`через ${k} ${plr(k,"день","дня","дней")}`;
+ return `${done} · ${n?"следующее":"первое повторение"} ${when}`}
+const emptyCTA=(t,h)=>`<div class="empty"><div style="font-size:34px">🏙</div><b style="display:block;color:var(--txt);margin:8px 0 4px">${t}</b>${h}<button class="btn" style="margin-top:14px" onclick="go('topic')">▶️ Новая серия</button></div>`;
 const go=p=>{ if(tg&&tg.openTelegramLink){tg.openTelegramLink(`https://t.me/${BOT}?start=${p}`);setTimeout(()=>tg.close(),300)} else location.href=`https://t.me/${BOT}?start=${p}` };
 function placeOf(raw,lab){if(lab&&typeof raw!=="object"){const p0=placeOf0(raw);return {t:lab,c:p0.t!==lab?p0.c:p0.c}}return placeOf0(raw)}
 function placeOf0(raw){let s=String(raw||"").trim();if(!s)return {t:"",c:""};
@@ -30,29 +42,29 @@ home(){const s=D.stats,due=D.words.filter(isDue);return `<div class="top"><div c
 <div class="acts"><div class="a p" onclick="go('topic')"><div>▶️</div>Новая серия</div><div class="a" onclick="go('review')"><div>🔁</div>Повторение</div><div class="a" onclick="nav('eps')"><div>📚</div>Мои серии</div><div class="a" onclick="nav('dict')"><div>📖</div>Словарь</div></div>
 ${due.length?`<div class="card"><h3>Сегодня к повторению · ${due.length}</h3>${due.slice(0,4).map(word).join("")}<button class="btn" onclick="${due[0].story_id?`openEp('${due[0].story_id}')`:"go('review')"}">📖 Перечитать серию и проверить себя</button></div>`:`<div class="card promo"><div class="e">✨</div><div><b>На сегодня всё повторено</b><p>Самое время для новой серии</p></div></div>`}
 <div class="tabs"><div class="tab ${homeTab==="zones"?"on":""}" onclick="homeTab='zones';render()">Город</div><div class="tab ${homeTab==="eps"?"on":""}" onclick="homeTab='eps';render()">Серии</div></div>
-${homeTab==="zones"?zoneTiles():(D.episodes.slice().reverse().map(epCard).join("")||'<div class="empty">Серий пока нет</div>')}`},
+${homeTab==="zones"?zoneTiles():(D.episodes.slice().reverse().map(epCard).join("")||emptyCTA("Серий пока нет","Выбери тему — и твой город оживёт в первой серии."))}`},
 city(){return `<div class="top"><b style="font-size:24px">${esc(D.city)}</b><div class="chip">${D.words.length} мест</div></div>${zoneTiles()}
 <div class="card" style="margin-top:12px" onclick="go('city')"><div class="w"><div class="t"><b>✏️ Добавить или поправить детали</b><small>места, названия, забытые подробности — без анкеты</small></div>›</div></div>
 ${Object.keys(ZK).map(k=>{const ws=D.words.filter(w=>kindOf(w)===k).sort((a,b)=>(a.chain_order??0)-(b.chain_order??0));return ws.length?`<div class="card" id="z-${k}" style="margin-top:12px"><h3 style="display:flex;justify-content:space-between">${ZK[k][0]} ${ZK[k][2]}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️ Править</span>`:""}</h3>${ws.map(word).join("")}</div>`:""}).join("")}
 <p style="color:var(--mut);font-size:12px;text-align:center"><span style="color:var(--grn)">●</span> помню · <span style="color:var(--gold)">●</span> скоро · <span style="color:var(--red)">●</span> пора повторить</p>`},
-eps(){return `<div class="top"><b style="font-size:24px">Мои серии</b><div class="chip" onclick="go('topic')">▶️ Новая</div></div>${D.episodes.slice().reverse().map(epCard).join("")||'<div class="empty">Серий пока нет</div>'}`},
+eps(){return `<div class="top"><b style="font-size:24px">Мои серии</b><div class="chip" onclick="go('topic')">▶️ Новая</div></div>${D.episodes.slice().reverse().map(epCard).join("")||emptyCTA("Серий пока нет","Выбери тему — и твой город оживёт в первой серии.")}`},
 ep(){const e=D.episodes.find(x=>x.id===epId);if(!e)return V.eps();return `<div class="top"><div style="font-size:26px;cursor:pointer" onclick="nav('eps')">‹</div><b>${esc(e.title)}</b><div></div></div>
 <div class="card map"><h3>🗺 Карта серии</h3>${e.words.map(w=>`<div>${isDue(w)?"⏰ ":""}📍 ${esc(placeOf(w.place,w.place_label).t||"—")} — <b onclick="openWord(\'${w.user_word_id}\')" style="text-decoration:underline dotted">${esc((w.article?w.article+" ":"")+w.lemma)}</b> (${esc(w.translation)}) · ${esc(w.syllables||w.lemma)}${sounds(w)?" → "+sounds(w):""}</div>`).join("")}</div>
 <div class="card story">${md(e.body)}</div>
 <div class="seg"><span class="chip" onclick="go('st_${e.id}')">🧠 Проверить себя</span><span class="chip" onclick="go('st_${e.id}')">✍️ Переписать</span><span class="chip" onclick="go('st_${e.id}')">🔊 Озвучить</span></div>
 <button class="btn" onclick="go('review')">🔁 Повторить слова этой серии</button>`},
 dict(){const ws=D.words.filter(w=>!q||(w.lemma+" "+w.translation).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>a.lemma.localeCompare(b.lemma,"de"));
- return `<div class="top"><b style="font-size:24px">Словарь</b><div class="chip">${D.words.length}</div></div><input class="srch" placeholder="Поиск: слово или перевод" value="${esc(q)}" oninput="q=this.value;const c=this.selectionStart;render();const i=$('.srch');i.focus();i.setSelectionRange(c,c)">
-<div class="card">${ws.map(word).join("")||'<div class="empty">Ничего не найдено</div>'}</div>`},
+ return `<div class="top"><b style="font-size:24px">Словарь</b><div class="chip">${D.words.length}</div></div>${!D.words.length?"":`<input class="srch" placeholder="Поиск: слово или перевод" value="${esc(q)}" oninput="q=this.value;const c=this.selectionStart;render();const i=$('.srch');i.focus();i.setSelectionRange(c,c)">`}
+${!D.words.length?emptyCTA("Тут появятся слова твоей первой серии","Каждое слово получит своё место в твоём городе и смешную историю."):`<div class="card">${ws.map(word).join("")||`<div class="empty">По запросу «${esc(q)}» слов нет — попробуй немецкое слово или перевод.</div>`}</div>`}`},
 word(){const w=wl[wi];if(!w)return V.home();const k=kindOf(w),col={der:"#7aa6ff",die:"#ff8fb0",das:"#6ff0a8",verb:"#f5c542"}[k];const p=placeOf(w.place,w.place_label);
- const due=w.due_at?new Date(w.due_at):null,dd=due&&due.getFullYear()<2090?(isDue(w)?"пора повторить ⏰":"следующее повторение "+due.toLocaleDateString("ru-RU",{day:"numeric",month:"long"})):"ещё не повторялось";
+ const due=w.due_at?new Date(w.due_at):null,dd=(x=>x[0].toUpperCase()+x.slice(1))(repLine(w)),dl=due&&due.getFullYear()<2090&&!isDue(w)?due.toLocaleDateString("ru-RU",{day:"numeric",month:"long"}):"";
  return `<div class="top"><div style="font-size:26px;cursor:pointer" onclick="back()">‹</div><div class="chip">${wi+1} / ${wl.length}</div><div style="font-size:26px;cursor:pointer" onclick="say()">🔊</div></div>
 ${CARD_V2?card2(w,k,col,p):`<div class="hero" style="text-align:center;padding:28px 18px"><div style="color:${col};font-weight:700;font-size:20px">${esc(w.pos==="verb"?"глагол":w.article||"")}</div>
 <div class="big" style="font-size:46px;color:${col}">${esc(w.lemma)}</div><div style="font-size:20px;color:#cfcfda">${esc(w.syllables||w.lemma)}</div><div style="margin-top:8px;font-size:18px">${esc(w.translation)}${w.plural?` <span style="color:var(--mut)">· мн. ${esc(w.plural)}</span>`:""}</div></div>
 <div class="card" style="margin-top:12px"><h3 style="display:flex;justify-content:space-between">📍 ${esc(p.t||"Место ещё не выбрано")}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️</span>`:""}</h3>${p.c?`<small style="color:var(--mut)">${esc(p.c)}</small>`:""}
 ${sounds(w)?`<div style="margin-top:10px;font-size:17px">🔤 ${esc(w.syllables||w.lemma)} → ${sounds(w)}</div>`:""}</div>
 ${w.image?`<div class="card story"><h3>🎬 Образ</h3><p>${esc(w.image)}</p></div>`:""}`}
-<div class="card"><div class="w"><div class="t"><b>${dd}</b><small>повторений: ${w.reps||0} · интервал ${w.interval_days||0} дн.</small></div><span style="color:${dot(w)}">●</span></div></div>
+<div class="card"><div class="w"><div class="t"><b>${dd}</b><small>${dl?"📅 "+dl+(w.interval_days?" · ":""):""}${w.interval_days?`интервал ${w.interval_days} ${plr(w.interval_days,"день","дня","дней")}`:""}</small></div><span style="color:${dot(w)}">●</span></div></div>
 <div class="seg">${w.story_id?`<span class="chip" onclick="openEp('${w.story_id}')">📖 Вся серия</span><span class="chip" onclick="go('st_${w.story_id}')">✏️ Переписать</span>`:""}<span class="chip" onclick="step(-1)">← Пред.</span><span class="chip" onclick="step(1)">След. →</span></div>`},
 more(){return `<div class="top"><b style="font-size:24px">Ещё</b><div></div></div><div class="card">
 <div class="w" onclick="go('review')"><div class="t"><b>🔁 Повторение</b><small>карточки и перечитывание</small></div>›</div>
@@ -80,7 +92,7 @@ function nav(t){tab=t;render();scrollTo(0,0)} function openEp(id){epId=id;nav("e
 const CARD_V2=new URLSearchParams(location.search).get("card2")!=="0"&&window.MC_CARD_V2!==false;
 const DOTS={der:"🔵",die:"🔴",das:"🟢",verb:"🟡"},DIST={der:"Мужской район",die:"Женский район",das:"Средний район",verb:"Улица действий"};
 function card2(w,k,col,p){const nm=(w.article?w.article+" ":"")+w.lemma,parts=String(w.syllables||w.lemma).split(/\s*[·‧-]\s*/).filter(Boolean),ss=Array.isArray(w.sounds)?w.sounds:[];
- const assoc=ss.length===parts.length?parts.map((x,i)=>`<div>${esc(x)} → «${esc(ss[i])}»</div>`).join(""):esc(parts.join(" · "));
+ const assoc=ss.length===parts.length?parts.map((x,i)=>`<div>${esc(x)} → ${qs(ss[i])}</div>`).join(""):esc(parts.join(" · "));
  const story=k==="verb"?`<span style="color:var(--gold)">${esc(w.image||"")}</span>`:esc(w.image||"");
  return `<div class="hero" style="padding:20px 18px"><div style="font-size:24px">${DOTS[k]||"⚪"} <b style="color:${col}">${esc(nm)}</b></div>
 <div style="margin-top:6px;font-size:18px">${esc(w.translation)} · ${sounds(w)||"—"}</div></div>
