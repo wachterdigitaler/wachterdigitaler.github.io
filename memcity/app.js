@@ -47,11 +47,11 @@ dict(){const ws=D.words.filter(w=>!q||(w.lemma+" "+w.translation).toLowerCase().
 word(){const w=wl[wi];if(!w)return V.home();const k=kindOf(w),col={der:"#7aa6ff",die:"#ff8fb0",das:"#6ff0a8",verb:"#f5c542"}[k];const p=placeOf(w.place,w.place_label);
  const due=w.due_at?new Date(w.due_at):null,dd=due&&due.getFullYear()<2090?(isDue(w)?"пора повторить ⏰":"следующее повторение "+due.toLocaleDateString("ru-RU",{day:"numeric",month:"long"})):"ещё не повторялось";
  return `<div class="top"><div style="font-size:26px;cursor:pointer" onclick="back()">‹</div><div class="chip">${wi+1} / ${wl.length}</div><div style="font-size:26px;cursor:pointer" onclick="say()">🔊</div></div>
-<div class="hero" style="text-align:center;padding:28px 18px"><div style="color:${col};font-weight:700;font-size:20px">${esc(w.pos==="verb"?"глагол":w.article||"")}</div>
+${CARD_V2?card2(w,k,col,p):`<div class="hero" style="text-align:center;padding:28px 18px"><div style="color:${col};font-weight:700;font-size:20px">${esc(w.pos==="verb"?"глагол":w.article||"")}</div>
 <div class="big" style="font-size:46px;color:${col}">${esc(w.lemma)}</div><div style="font-size:20px;color:#cfcfda">${esc(w.syllables||w.lemma)}</div><div style="margin-top:8px;font-size:18px">${esc(w.translation)}${w.plural?` <span style="color:var(--mut)">· мн. ${esc(w.plural)}</span>`:""}</div></div>
 <div class="card" style="margin-top:12px"><h3 style="display:flex;justify-content:space-between">📍 ${esc(p.t||"Место ещё не выбрано")}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️</span>`:""}</h3>${p.c?`<small style="color:var(--mut)">${esc(p.c)}</small>`:""}
 ${sounds(w)?`<div style="margin-top:10px;font-size:17px">🔤 ${esc(w.syllables||w.lemma)} → ${sounds(w)}</div>`:""}</div>
-${w.image?`<div class="card story"><h3>🎬 Образ</h3><p>${esc(w.image)}</p></div>`:""}
+${w.image?`<div class="card story"><h3>🎬 Образ</h3><p>${esc(w.image)}</p></div>`:""}`}
 <div class="card"><div class="w"><div class="t"><b>${dd}</b><small>повторений: ${w.reps||0} · интервал ${w.interval_days||0} дн.</small></div><span style="color:${dot(w)}">●</span></div></div>
 <div class="seg">${w.story_id?`<span class="chip" onclick="openEp('${w.story_id}')">📖 Вся серия</span><span class="chip" onclick="go('st_${w.story_id}')">✏️ Переписать</span>`:""}<span class="chip" onclick="step(-1)">← Пред.</span><span class="chip" onclick="step(1)">След. →</span></div>`},
 more(){return `<div class="top"><b style="font-size:24px">Ещё</b><div></div></div><div class="card">
@@ -75,3 +75,15 @@ function nav(t){tab=t;render();scrollTo(0,0)} function openEp(id){epId=id;nav("e
  try{const r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({initData:init})});if(!r.ok)throw new Error(r.status);D=await r.json();
  const st=new URLSearchParams(location.search).get("screen");if(st)tab=st;if(tab==="ep")epId=D.episodes[0]&&D.episodes[0].id;if(tab==="word"){tab="home";render();openWord((D.words.find(isDue)||D.words[0]||{}).user_word_id);return}render()}
  catch(e){$("#app").innerHTML='<div class="load">Не получилось загрузить данные ('+esc(e.message)+'). Попробуй ещё раз.</div>'}})();
+
+// v2 «грунд» card (2026-10-15): key-style header → части → ассоциации → район → история. On by default; ?card2=0 or window.MC_CARD_V2=false → old card.
+const CARD_V2=new URLSearchParams(location.search).get("card2")!=="0"&&window.MC_CARD_V2!==false;
+const DOTS={der:"🔵",die:"🔴",das:"🟢",verb:"🟡"},DIST={der:"Мужской район",die:"Женский район",das:"Средний район",verb:"Улица действий"};
+function card2(w,k,col,p){const nm=(w.article?w.article+" ":"")+w.lemma,parts=String(w.syllables||w.lemma).split(/\s*[·‧-]\s*/).filter(Boolean),ss=Array.isArray(w.sounds)?w.sounds:[];
+ const assoc=ss.length===parts.length?parts.map((x,i)=>`<div>${esc(x)} → «${esc(ss[i])}»</div>`).join(""):esc(parts.join(" · "));
+ const story=k==="verb"?`<span style="color:var(--gold)">${esc(w.image||"")}</span>`:esc(w.image||"");
+ return `<div class="hero" style="padding:20px 18px"><div style="font-size:24px">${DOTS[k]||"⚪"} <b style="color:${col}">${esc(nm)}</b></div>
+<div style="margin-top:6px;font-size:18px">${esc(w.translation)} · ${sounds(w)||"—"}</div></div>
+<div class="card" style="margin-top:12px"><h3>🔤 Части и ассоциации</h3><div style="font-size:17px;line-height:1.6">${assoc}</div></div>
+<div class="card"><h3 style="display:flex;justify-content:space-between">📍 ${DIST[k]||"Дорога между районами"}${p.t?" — "+esc(p.t):""}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️</span>`:""}</h3></div>
+<div class="card story"><h3>🎬 История</h3><p>${story||"История ещё не придумана."}</p></div>`}
