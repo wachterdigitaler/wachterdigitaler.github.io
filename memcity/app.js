@@ -1,4 +1,7 @@
 const API="https://wbrpcvbpipeejdnsymdz.supabase.co/functions/v1/memcity-app", BOT="fixDeutsch_bot";
+// APP_VERSION — single source for cache-bust ?v= and the label; tools/bump_version.sh updates these + index.html
+const APP_VERSION="3.5-oldlook.1", APP_BUILT="17.10 13:47";
+const verLabel=()=>`<div class="ver" title="${esc(APP_VERSION)}">Версия ${esc(APP_VERSION.replace("-oldlook",""))} · ${esc(APP_BUILT)}</div>`;
 const tg=window.Telegram&&Telegram.WebApp; if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#0b0b0f");tg.setBackgroundColor("#0b0b0f")}catch(e){}}
 const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 // oldlook (NordSturm 17.10): the look of 924d475 (#134) back — dark cards, colour tiles per place, 5 tabs, the big word card —
@@ -65,14 +68,14 @@ function zoneTiles(){const g={};D.words.forEach(w=>{const k=kindOf(w);(g[k]=g[k]
 function epCard(e,i){const dn=e.words.filter(isDue).length;return `<div class="card ep" onclick="openEp('${e.id}')"><div class="ic">🎬</div><div class="t" style="flex:1"><b>${esc(tt(e.title||e.topic))}</b><small style="display:block;color:var(--mut)">${e.words.length} ${plr(e.words.length,"слово","слова","слов")}${dn?" · 🔁 "+dn+" повторить сегодня":""}</small></div>›</div>`}
 const eps=()=>D.episodes.slice().reverse().map(epCard).join("")||emptyCTA("Глав пока нет","Выбери тему — и твой город оживёт в первой главе.");
 const V={
-book(){const s=D.stats,due=D.words.filter(isDue);return `<div class="top"><div class="av">${esc((D.name||"?")[0])}</div><div class="chip" onclick="go('city')" title="Изменить город">📍 ${esc(D.city)} · ${esc(D.level)} ✏️</div><div></div></div>
+book(){const s=D.stats,due=D.words.filter(isDue);return `<div class="top"><div class="av">${esc((D.name||"?")[0])}</div><div class="chip" onclick="go('city')" title="Изменить город">📍 ${esc(D.city)} · ${esc(D.level)} ✏️</div>${verLabel()}</div>
 <div class="hero"><small>Слов в твоём городе</small><div class="big">${s.words} <span>${plr(s.words,"слово","слова","слов")}</span></div><div class="stats"><div class="st"><b>${s.due}</b><i>🔁 к повторению</i></div><div class="st"><b>${s.streak} 🔥</b><i>дней подряд</i></div><div class="st"><b>${s.learned}</b><i>✅ выучено</i></div></div></div>
 <div class="acts">${R23.readnext?`<div class="a p" onclick="go('next')"><div>▶️</div>Читать дальше</div>`:`<div class="a p" onclick="go('topic')"><div>▶️</div>Новая глава</div>`}<div class="a" onclick="go('review')"><div>🔁</div>Повторить</div><div class="a" onclick="nav('eps')"><div>📚</div>Мои главы</div><div class="a" onclick="nav('dict')"><div>📖</div>Словарь</div></div>
 ${R23.readnext&&D.next?`<div class="card nx" onclick="go('next')"><small>Сейчас читаешь</small><b>📖 ${esc(nxTitle())}</b></div>`:""}
 ${due.length?`<div class="card"><h3 class="rvh" onclick="go('review')">🔁 Повторить: ${due.length} ${plr(due.length,"слово","слова","слов")}<span>›</span></h3>${due.slice(0,4).map(word).join("")}<button class="btn" onclick="${due[0].story_id?`openEp('${due[0].story_id}')`:"go('review')"}">📖 Перечитать главу и проверить себя</button></div>`:D.words.length?`<div class="card promo"><div class="e">✨</div><div><b>На сегодня всё повторено</b><p>Самое время читать дальше</p></div></div>`:`<div class="card promo" onclick="go('topic')"><div class="e">📖</div><div><b>Начни первую главу</b><p>Выбери тему — и твой город оживёт в первой главе</p></div></div>`}
 <div class="tabs"><div class="tab ${homeTab==="zones"?"on":""}" onclick="homeTab='zones';render()">Город</div><div class="tab ${homeTab==="eps"?"on":""}" onclick="homeTab='eps';render()">Главы</div></div>
 ${homeTab==="zones"?zoneTiles():eps()}`},
-city(){return `<div class="top"><b style="font-size:24px">${esc(D.city)}</b><div class="chip">${D.words.length} ${plr(D.words.length,"слово","слова","слов")}</div></div>${zoneTiles()}
+city(){return `<div class="top"><b style="font-size:24px">${esc(D.city)}</b><div class="chip">${D.words.length} ${plr(D.words.length,"слово","слова","слов")}</div>${verLabel()}</div>${zoneTiles()}
 <div style="margin-top:12px">${revRow(D.words)}</div>
 <div class="card" onclick="go('city')"><div class="w"><div class="t"><b>✏️ Добавить или поправить детали</b><small>места, названия, забытые подробности — без анкеты</small></div>›</div></div>
 ${Object.keys(ZK).map(k=>{const ws=D.words.filter(w=>kindOf(w)===k).sort((a,b)=>(a.chain_order??0)-(b.chain_order??0));return ws.length?`<div class="card" id="z-${k}" style="margin-top:12px"><h3 class="zh">${zhead(k)}${zid(k)?`<span class="chip" onclick="event.stopPropagation();go('ce_z_${zid(k)}')">✏️ Править</span>`:""}</h3>${ws.map(word).join("")}</div>`:""}).join("")}
