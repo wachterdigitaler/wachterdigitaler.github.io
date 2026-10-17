@@ -1,7 +1,7 @@
 const API="https://wbrpcvbpipeejdnsymdz.supabase.co/functions/v1/memcity-app", BOT="fixDeutsch_bot";
 // APP_VERSION — single source for cache-bust ?v= and the label; tools/bump_version.sh updates these + index.html
-const APP_VERSION="3.5-oldlook.1", APP_BUILT="17.10 13:47";
-const verLabel=()=>`<div class="ver" title="${esc(APP_VERSION)}">Версия ${esc(APP_VERSION.replace("-oldlook",""))} · ${esc(APP_BUILT)}</div>`;
+const APP_VERSION="3.5.1", APP_BUILT="17.10 13:55";
+const verLabel=()=>`<div class="ver">Версия ${esc(APP_VERSION)}</div>`;
 const tg=window.Telegram&&Telegram.WebApp; if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#0b0b0f");tg.setBackgroundColor("#0b0b0f")}catch(e){}}
 const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 // oldlook (NordSturm 17.10): the look of 924d475 (#134) back — dark cards, colour tiles per place, 5 tabs, the big word card —
