@@ -70,3 +70,66 @@ details.map[open] summary{margin-bottom:6px}
 
 /* version label (NordSturm 17.10): top of home/city, next to the city name */
 .ver{font-size:11px;color:var(--mut);opacity:.7;white-space:nowrap;align-self:center;line-height:1.2;padding:2px 0;pointer-events:none;user-select:none}
+
+/* r25 «Главы» деревом (Designer proto/tree.css, hq.reports 160) */
+.bk{display:inline-flex;align-items:center;gap:6px;background:var(--card2);border-radius:99px;padding:8px 14px;font-size:14px;font-weight:600;margin:4px 0 14px}
+.crumb{font-size:13px;color:var(--mut);margin-bottom:4px}
+.ttl{font-size:26px;font-weight:800;letter-spacing:-.4px;margin-bottom:4px}.ttl+.sub{color:var(--mut);font-size:14px;margin-bottom:18px}
+.streakline{display:flex;gap:10px;align-items:center;background:var(--card);border-radius:18px;padding:12px 14px;margin-bottom:16px;font-size:14px}
+.streakline b{font-size:18px}
+.sec{display:flex;gap:14px;align-items:center;border-radius:22px;padding:16px;margin-bottom:12px;color:#fff;position:relative}
+.sec .em{width:52px;height:52px;border-radius:16px;background:#ffffff26;display:grid;place-items:center;font-size:28px;flex:none}
+.sec .t{flex:1}.sec b{font-size:18px;display:block}.sec small{font-size:13px;opacity:.9;display:block;margin-top:2px}
+.sec .chev{font-size:22px;opacity:.8}
+.pill{display:inline-block;background:#ffffff26;border-radius:99px;padding:2px 9px;font-size:12px;font-weight:600;margin-top:7px;margin-right:4px}
+.dark{color:#1a1300}.dark .em,.dark .pill{background:#1a130018}
+.sub2{display:flex;gap:14px;align-items:center;background:var(--card);border-radius:20px;padding:16px;margin-bottom:12px;border-left:5px solid var(--c)}
+.sub2 .no{width:44px;height:44px;border-radius:14px;background:color-mix(in srgb,var(--c) 25%,transparent);display:grid;place-items:center;font-size:22px;flex:none}
+.sub2 .t{flex:1}.sub2 b{font-size:16px;display:block}.sub2 small{color:var(--mut);font-size:13px;display:block;margin-top:2px}
+.lv{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:7px;background:color-mix(in srgb,var(--c) 22%,transparent);color:#fff;margin:6px 4px 0 0}
+.bar2{height:5px;border-radius:5px;background:#ffffff14;margin-top:8px;overflow:hidden}.bar2 i{display:block;height:100%;background:var(--c)}
+.part{background:var(--card);border-radius:20px;padding:16px;margin-bottom:12px}
+.part .h{display:flex;justify-content:space-between;align-items:center}.part .h b{font-size:16px}.part .h small{color:var(--mut);font-size:13px}
+.part.cur{box-shadow:inset 0 0 0 2px #7c5cff}
+.st2{font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;background:#3ddc8422;color:#6ff0a8}.st2.r{background:#7c5cff33;color:#c9b8ff}.st2.n{background:#ffffff12;color:var(--mut)}
+.wds{margin-top:12px;border-top:1px solid #ffffff0d;padding-top:4px}
+.wd{display:flex;align-items:center;gap:12px;padding:8px 0}.wd .t{flex:1}.wd small{display:block;color:var(--mut);font-size:12px}
+.gold{color:var(--gold);font-weight:700}
+.grp{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin:18px 4px 10px}
+.streakline{display:block}.streakline b{font-size:15px}
+.st2{white-space:nowrap;flex:none;margin-left:8px}
+.sec{padding:12px 14px;margin-bottom:10px;gap:12px}.sec .em{width:44px;height:44px;font-size:24px;border-radius:14px}.sec b{font-size:17px}.sec small{font-size:12px}.pill{margin-top:5px;font-size:11px}
+.bk{cursor:pointer;min-height:44px}.sec,.sub2,.part .h,.part.blk{cursor:pointer}.sec .chev,.sub2 .chev{color:inherit}
+.sub2 .chev{color:var(--mut);font-size:22px}.sub2.idle{opacity:.62}.part .h{min-height:44px;gap:8px}.part.blk{padding:14px 16px}
+.wd{cursor:pointer;min-height:44px}
+/* r25 «🔄 Полный сброс» */
+.warn{border:1px solid #ff5d8a55;background:linear-gradient(160deg,#2a1520,#17171d)}.warn ul{margin:8px 0 10px 20px;line-height:1.7}.warn p{margin-top:6px}.warn .mut,.mut{color:var(--mut);font-size:13px}
+.rsin{margin:10px 0 0;font-size:18px;letter-spacing:2px;text-align:center}.btn.danger{background:#d93a63}.btn:disabled{opacity:.4;cursor:default}
+.rsmsg{color:#ff8fb0;margin-top:10px;font-size:14px}.rsdone b{display:block;color:var(--txt);font-size:20px;margin:10px 0 6px}.rsdone p{margin:4px 0}.rsdone .btn{margin-top:18px}
+.rsown .seg{margin:12px 0 8px}.rsown .seg a{padding:10px 6px}.rsown p{margin:4px 0 0;font-size:14px}
+/* #299 coins showcase (design #185/#188): coin = turquoise «Ⓜ», MEMC = silver rhombus #e6ecf5 + #0098EA rim */
+:root{--coin:#2ee6c5;--memc:#e6ecf5;--ton:#0098EA}
+.cchip{display:inline-flex;align-items:center;gap:4px;height:34px;padding:0 12px;border-radius:99px;background:#2ee6c51f;color:var(--coin);font:800 15px/1 Inter,system-ui,sans-serif;cursor:pointer;position:relative}
+.cchip .pro{background:#7c5cff26;border:1px solid #7c5cff88;color:#d9ccff;border-radius:99px;padding:3px 7px;font-size:12px}
+.cchip .fly{position:absolute;right:-6px;top:-12px;font-style:normal;font-size:12px;color:#ff8fb0;animation:fly .6s ease-out forwards}
+@keyframes fly{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-10px)}}
+.cn{font-weight:900;color:var(--coin)}
+.cline{margin:6px 6px 10px;color:#a9a9bb;font-size:14px}
+.tst{margin:8px 0 12px;padding:8px 12px;border-radius:12px;background:#ffd76a1a;color:#ffd76a;font-size:13px}
+.tag{font-size:12px;color:#ffd76a;font-weight:600;vertical-align:middle}
+.cbig{text-align:center}.cbig .cbg{font-size:44px;color:var(--coin);font-weight:900}
+.hl{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #ffffff10}.hl:last-child{border-bottom:0}
+.hl .pl{color:var(--coin)}.hl .mn{color:#ff8fb0}
+.row2{display:flex;gap:8px}.row2 .btn{flex:1}
+.btn.sec{background:#1c1c26;color:#fff}
+.btn.tok{background:#1c1c26;color:#fff;border:1px solid var(--ton)}
+.btn.tonb{background:var(--ton);color:#fff}
+.dia{display:inline-block;color:#1a2233;background:var(--memc);border:2px solid var(--ton);width:20px;height:20px;line-height:16px;text-align:center;transform:rotate(45deg);border-radius:4px;font-size:0;vertical-align:middle;margin-right:6px}
+.packs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.pack{background:#16161f;border-radius:16px;padding:16px;text-align:center;cursor:pointer}
+.pack b{display:block;font-size:20px;color:var(--coin)}.pack.on{outline:2px solid var(--ton)}
+.lnk{word-break:break-all;font-size:14px}.link.warn{color:#ff8fb0}
+.gcard{padding:10px}.mapa{width:100%;height:auto;display:block;border-radius:24px}
+.gst{padding:10px 6px 4px}.gst .bar{height:8px;border-radius:99px;background:#ffffff14;margin:8px 0}.gst .bar i{display:block;height:100%;border-radius:99px;background:var(--coin)}
+.gev{text-align:center}.gev .mapa{margin:10px 0}.quote{font-style:italic;color:#cfcfda}
+.row2{align-items:stretch}.row2 .btn{margin-left:0;margin-right:0;display:flex;align-items:center;justify-content:center}
+.gst .gdesc{margin:4px 0 6px;color:#cfcfda;font-size:14px;line-height:1.35}.gst .gedit{display:block;margin-top:10px;text-align:center}

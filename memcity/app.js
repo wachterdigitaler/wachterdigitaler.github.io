@@ -1,6 +1,6 @@
 const API="https://wbrpcvbpipeejdnsymdz.supabase.co/functions/v1/memcity-app", BOT="fixDeutsch_bot";
 // APP_VERSION — single source for cache-bust ?v= and the label; tools/bump_version.sh updates these + index.html
-const APP_VERSION="3.5.1", APP_BUILT="17.10 13:55";
+const APP_VERSION="3.6.0", APP_BUILT="19.10 03:16";
 const verLabel=()=>`<div class="ver">Версия ${esc(APP_VERSION)}</div>`;
 const tg=window.Telegram&&Telegram.WebApp; if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#0b0b0f");tg.setBackgroundColor("#0b0b0f")}catch(e){}}
 const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -68,14 +68,14 @@ function zoneTiles(){const g={};D.words.forEach(w=>{const k=kindOf(w);(g[k]=g[k]
 function epCard(e,i){const dn=e.words.filter(isDue).length;return `<div class="card ep" onclick="openEp('${e.id}')"><div class="ic">🎬</div><div class="t" style="flex:1"><b>${esc(tt(e.title||e.topic))}</b><small style="display:block;color:var(--mut)">${e.words.length} ${plr(e.words.length,"слово","слова","слов")}${dn?" · 🔁 "+dn+" повторить сегодня":""}</small></div>›</div>`}
 const eps=()=>D.episodes.slice().reverse().map(epCard).join("")||emptyCTA("Глав пока нет","Выбери тему — и твой город оживёт в первой главе.");
 const V={
-book(){const s=D.stats,due=D.words.filter(isDue);return `<div class="top"><div class="av">${esc((D.name||"?")[0])}</div><div class="chip" onclick="go('city')" title="Изменить город">📍 ${esc(D.city)} · ${esc(D.level)} ✏️</div>${verLabel()}</div>
+book(){if(D.reset)return rsEmpty();const s=D.stats,due=D.words.filter(isDue);return `<div class="top"><div class="av">${esc((D.name||"?")[0])}</div><div class="chip" onclick="go('city')" title="Изменить город">📍 ${esc(D.city)} · ${esc(D.level)} ✏️</div>${verLabel()}</div>
 <div class="hero"><small>Слов в твоём городе</small><div class="big">${s.words} <span>${plr(s.words,"слово","слова","слов")}</span></div><div class="stats"><div class="st"><b>${s.due}</b><i>🔁 к повторению</i></div><div class="st"><b>${s.streak} 🔥</b><i>дней подряд</i></div><div class="st"><b>${s.learned}</b><i>✅ выучено</i></div></div></div>
 <div class="acts">${R23.readnext?`<div class="a p" onclick="go('next')"><div>▶️</div>Читать дальше</div>`:`<div class="a p" onclick="go('topic')"><div>▶️</div>Новая глава</div>`}<div class="a" onclick="go('review')"><div>🔁</div>Повторить</div><div class="a" onclick="nav('eps')"><div>📚</div>Мои главы</div><div class="a" onclick="nav('dict')"><div>📖</div>Словарь</div></div>
 ${R23.readnext&&D.next?`<div class="card nx" onclick="go('next')"><small>Сейчас читаешь</small><b>📖 ${esc(nxTitle())}</b></div>`:""}
 ${due.length?`<div class="card"><h3 class="rvh" onclick="go('review')">🔁 Повторить: ${due.length} ${plr(due.length,"слово","слова","слов")}<span>›</span></h3>${due.slice(0,4).map(word).join("")}<button class="btn" onclick="${due[0].story_id?`openEp('${due[0].story_id}')`:"go('review')"}">📖 Перечитать главу и проверить себя</button></div>`:D.words.length?`<div class="card promo"><div class="e">✨</div><div><b>На сегодня всё повторено</b><p>Самое время читать дальше</p></div></div>`:`<div class="card promo" onclick="go('topic')"><div class="e">📖</div><div><b>Начни первую главу</b><p>Выбери тему — и твой город оживёт в первой главе</p></div></div>`}
 <div class="tabs"><div class="tab ${homeTab==="zones"?"on":""}" onclick="homeTab='zones';render()">Город</div><div class="tab ${homeTab==="eps"?"on":""}" onclick="homeTab='eps';render()">Главы</div></div>
 ${homeTab==="zones"?zoneTiles():eps()}`},
-city(){return `<div class="top"><b style="font-size:24px">${esc(D.city)}</b><div class="chip">${D.words.length} ${plr(D.words.length,"слово","слова","слов")}</div>${verLabel()}</div>${zoneTiles()}
+city(){if(D.reset)return rsEmpty();return `<div class="top"><b style="font-size:24px">${esc(D.city)}</b><div class="chip">${D.words.length} ${plr(D.words.length,"слово","слова","слов")}</div>${verLabel()}</div>${zoneTiles()}
 <div style="margin-top:12px">${revRow(D.words)}</div>
 <div class="card" onclick="go('city')"><div class="w"><div class="t"><b>✏️ Добавить или поправить детали</b><small>места, названия, забытые подробности — без анкеты</small></div>›</div></div>
 ${Object.keys(ZK).map(k=>{const ws=D.words.filter(w=>kindOf(w)===k).sort((a,b)=>(a.chain_order??0)-(b.chain_order??0));return ws.length?`<div class="card" id="z-${k}" style="margin-top:12px"><h3 class="zh">${zhead(k)}${zid(k)?`<span class="chip" onclick="event.stopPropagation();go('ce_z_${zid(k)}')">✏️ Править</span>`:""}</h3>${ws.map(word).join("")}</div>`:""}).join("")}
@@ -104,7 +104,9 @@ more(){return `<div class="top"><b style="font-size:24px">Ещё</b><div></div><
 <div class="w" onclick="go('review')"><div class="t"><b>🔁 Повторение</b><small>карточки и перечитывание</small></div>›</div>
 <div class="w" onclick="go('topic')"><div class="t"><b>🎒 Наборы тем</b><small>выбрать тему для новой главы</small></div>›</div>
 <div class="w" onclick="openKl()"><div class="t"><b>☑ Что уже знаешь?</b><small>знакомые слова следующей части</small></div>›</div>
-<div class="w" onclick="go('city')"><div class="t"><b>🏙 Мой город</b><small>места и названия — в разделе «Город» в боте</small></div>›</div></div>`}};
+<div class="w" onclick="go('city')"><div class="t"><b>🏙 Мой город</b><small>места и названия, перестройка — слова и истории останутся</small></div>›</div></div>
+${RS.restore?`<div class="card"><div class="w" id="rsback" onclick="rrOpen()"><div class="t"><b>↩️ Вернуть мой город</b><small>как было до сброса · копия до ${esc(rsDate(RS.restore.expires_at))}</small></div>›</div></div>`:""}
+<div class="card"><div class="w" id="rsitem" onclick="rsOpen()"><div class="t"><b>🔄 Полный сброс</b><small>стереть всё: город, истории, словарь — начать с нуля (копия 30 дней)</small></div>›</div></div>`}};
 V.home=V.book;
 // PM #189: «знаю / учим» — the same checklist as in the bot (memcity.word_skips via the edge op, signed initData; never WebApp.send-data)
 let KL=null, klMode="part";
@@ -135,9 +137,9 @@ function speak(w){if(!window.speechSynthesis)return toast("Озвучка поя
 function toast(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
 function say(){const w=wl[wi];if(!w)return;try{if(player)player.pause();player=new Audio(AUDIO+w.word_id+".mp3");player.play().catch(()=>speak(w));player.onerror=()=>speak(w)}catch(e){speak(w)}}
 let tx=null;document.addEventListener("touchstart",e=>{tx=e.touches[0].clientX},{passive:true});document.addEventListener("touchend",e=>{if(tab!=="word"||tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>60)step(dx<0?1:-1);tx=null},{passive:true});
-if(tg&&tg.BackButton)tg.BackButton.onClick(()=>tab==="word"?back():tab==="ep"?nav("eps"):tab==="kl"?nav("dict"):nav("home"));
-function render(){if(tab==="book")tab="home";if(tg&&tg.BackButton){tab==="home"?tg.BackButton.hide():tg.BackButton.show()}$("#app").innerHTML=V[tab]?V[tab]():V.home();const nt=tab==="ep"?"eps":tab==="kl"?"dict":tab==="word"?(prev==="ep"?"eps":prev==="book"?"home":prev):tab;$("#nav").innerHTML=NAV.map(([k,i,l])=>`<div class="${k===nt?"on":""}" onclick="nav('${k}')"><span>${i}</span>${l}</div>`).join("")}
-function nav(t){tab=t;render();scrollTo(0,0)} function openEp(id){epId=id;nav("ep")} function openZone(k){nav("city");setTimeout(()=>{const el=document.getElementById("z-"+k);el&&el.scrollIntoView({behavior:"smooth"})},50)}
+if(tg&&tg.BackButton)tg.BackButton.onClick(()=>window.CV&&CV.is(tab)?CV.back():tab==="word"?back():tab==="ep"?nav("eps"):tab==="eps"&&(tSec||tSub)?tUp():tab==="kl"?nav("dict"):tab==="reset"||tab==="restore"?nav("more"):nav("home"));
+function render(){if(tab==="book")tab="home";if(tg&&tg.BackButton){tab==="home"?tg.BackButton.hide():tg.BackButton.show()}$("#app").innerHTML=V[tab]?V[tab]():V.home();const nt=window.CV&&CV.is(tab)?CV.navOf(tab):tab==="ep"?"eps":tab==="kl"?"dict":tab==="reset"||tab==="resetDone"||tab==="restore"||tab==="restoreDone"?"more":tab==="word"?(prev==="ep"?"eps":prev==="book"?"home":prev):tab;$("#nav").innerHTML=NAV.map(([k,i,l])=>`<div class="${k===nt?"on":""}" onclick="navTab('${k}')"><span>${i}</span>${l}</div>`).join("")}
+function nav(t){tab=t;render();scrollTo(0,0);if(t==="more")rsInfo()} function openEp(id){epId=id;nav("ep")} function openZone(k){nav("city");setTimeout(()=>{const el=document.getElementById("z-"+k);el&&el.scrollIntoView({behavior:"smooth"})},50)}
 (async()=>{const init=tg&&tg.initData;if(!init){$("#app").innerHTML='<div class="load">Открой приложение из бота @'+BOT+'</div>';return}
  try{const r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({initData:init})});if(!r.ok)throw new Error(r.status);D=await r.json();
  const st=new URLSearchParams(location.search).get("screen");if(st)tab=st;if(tab==="book")tab="home";if(tab==="ep")epId=D.episodes[0]&&D.episodes[0].id;if(tab==="word"){tab="home";render();openWord((D.words.find(isDue)||D.words[0]||{}).user_word_id);return}if(tab==="kl"){tab="dict";return openKl()}render()}
@@ -154,3 +156,100 @@ function card2(w,k,col,p){const nm=(w.article?w.article+" ":"")+w.lemma,parts=St
 <div class="card" style="margin-top:12px"><h3>🔤 Части и ассоциации</h3><div style="font-size:17px;line-height:1.6">${assoc}</div></div>
 <div class="card"><h3 style="display:flex;justify-content:space-between">📍 ${esc(artLbl(k))}${p.t?" — "+esc(p.t):""}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️</span>`:""}</h3></div>
 <div class="card story"><h3>🎬 История</h3><p>${story||"История ещё не придумана."}</p></div>`}
+
+// ---------- r25 (NordSturm 17.10): «Главы» деревом — 8 разделов → подглава (тема без уровня, бейджи A1/A2/B1) →
+// [блоки «Части 1–3 · 4–6», если частей > 3] → части и слова. «⬅️ Назад» + строка пути на каждом уровне; Telegram BackButton
+// = на уровень выше. Разделы — та же таблица, что в боте (chapters.js из core/sections.py). Данные — тот же payload (topic
+// истории = название главы), новых запросов нет. Без бейджа срока и красных точек; r25b: без 🔥 в «Главах» (PM #171 UX 5).
+const TR=window.MCTree||{sections:[{k:"base",e:"🧩",n:"Основа",c:"#f5c542"}],catalog:[],big:3,block:3,sectionOf:()=>"base"};
+let tSec=null,tSub=null,tBlk=null,tOpen=null,tList=[];
+const subTitle=e=>String(e.topic||"").trim()||"Мои главы";
+const shade=c=>{const n=parseInt(c.slice(1),16),f=x=>Math.round(x*.62).toString(16).padStart(2,"0");return "#"+f(n>>16)+f((n>>8)&255)+f(n&255)};
+const words_=n=>`${n} ${plr(n,"слово","слова","слов")}`, parts_=n=>`${n} ${plr(n,"часть","части","частей")}`;
+function tree(){const subs=new Map();
+ TR.catalog.forEach(c=>subs.set(c.t,{t:c.t,e:c.e,sec:c.sec,lv:c.lv||[],n:c.n,eps:[]}));
+ (D.episodes||[]).forEach(e=>{const t=subTitle(e);let x=subs.get(t);if(!x){x={t,e:"📘",sec:TR.sectionOf(t,false),lv:[],n:0,eps:[]};subs.set(t,x)}x.eps.push(e)});
+ subs.forEach(x=>{x.eps.sort((a,b)=>String(a.created_at||"").localeCompare(String(b.created_at||"")));x.words=x.eps.reduce((a,e)=>a+e.words.length,0);x.due=x.eps.reduce((a,e)=>a+e.words.filter(isDue).length,0)});
+ const all=[...subs.values()];
+ return TR.sections.map(s=>({...s,subs:all.filter(x=>x.sec===s.k).sort((a,b)=>(a.eps.length?0:1)-(b.eps.length?0:1))}))}
+const bk=()=>`<div class="bk" onclick="tUp()">⬅️ Назад</div>`;
+function tGo(k){tSec=k;tSub=null;tBlk=null;tOpen=null;render();scrollTo(0,0)}
+function tPick(i){const x=tList[i];if(!x)return;tSub=x.t;tBlk=null;tOpen=null;render();scrollTo(0,0)}
+function tUp(){if(tSub){tSub=null;tBlk=null;tOpen=null}else tSec=null;render();scrollTo(0,0)}
+function tB(b){tBlk=b;tOpen=null;render()} function tP(id){tOpen=tOpen===id?"":id;render()}
+function navTab(k){if(k==="eps"&&tab==="eps"){tSec=null;tSub=null;tBlk=null;tOpen=null}nav(k)}
+const partName=(e,sub)=>{let t=tt(e.title||"").replace(/^\s*часть\s*\d+\s*·\s*/i,"").replace(/\s*·\s*часть\s*\d+\s*$/i,"").replace(/^«(.+)»$/,"$1").trim();return t===sub||/^Глава\b/.test(t)?"":t};
+V.eps=function(){const S=tree();
+ if(tSec&&tSub){const s=S.find(x=>x.k===tSec),x=s&&s.subs.find(y=>y.t===tSub);if(x)return vSub(s,x);tSub=null}
+ if(tSec){const s=S.find(x=>x.k===tSec);if(s)return vSec(s);tSec=null}
+ const nx=D.next,tot=D.words.length;   // r25b (PM #171 UX 5): «Главы» = a book, no 🔥 streak
+ return `<div class="top"><div class="ttl" style="margin:0">Мои главы</div>${verLabel()}</div><div class="sub" style="margin:-8px 0 16px">${S.length} разделов · ${words_(tot)}</div>
+${nx?`<div class="streakline">📖 Читаешь «${esc(nx.title)}»${nx.n?", часть "+nx.n:""}</div>`:""}
+${S.map(s=>{const w=s.subs.reduce((a,x)=>a+x.words,0),dn=s.subs.reduce((a,x)=>a+x.due,0),on=s.subs.some(x=>x.eps.length);
+ return `<div class="sec ${s.k==="base"?"dark":""}" style="background:linear-gradient(135deg,${s.c},${shade(s.c)})" onclick="tGo('${s.k}')"><div class="em">${s.e}</div><div class="t"><b>${esc(s.n)}</b><small>${s.subs.slice(0,3).map(x=>esc(x.t)).join(" · ")}</small><span class="pill">${s.subs.length} ${plr(s.subs.length,"подглава","подглавы","подглав")}</span>${w?`<span class="pill">${words_(w)}</span>`:on?"":`<span class="pill">ещё не начато</span>`}${dn?`<span class="pill">🔁 ${dn} повторить</span>`:""}</div><div class="chev">›</div></div>`}).join("")}`};
+function vSec(s){tList=s.subs;const w=s.subs.reduce((a,x)=>a+x.words,0),dn=s.subs.reduce((a,x)=>a+x.due,0);
+ return `${bk()}<div class="crumb">Главы ›</div><div class="ttl">${s.e} ${esc(s.n)}</div><div class="sub">${s.subs.length} ${plr(s.subs.length,"подглава","подглавы","подглав")}${w?" · "+words_(w):""}${dn?" · 🔁 "+dn+" повторить":""}</div>
+${s.subs.map((x,i)=>{const k=x.eps.length,pct=x.n?Math.min(100,Math.round(100*x.words/x.n)):k?100:0;
+ return `<div class="sub2 ${k?"":"idle"}" style="--c:${s.c}" onclick="tPick(${i})"><div class="no">${x.e}</div><div class="t"><b>${esc(x.t)}</b><small>${k?`${parts_(k)} · ${words_(x.words)}${x.due?" · 🔁 "+x.due+" повторить":""}`:`ещё не начато${x.n?" · "+words_(x.n)+" в теме":""}`}</small>${x.lv.map(l=>`<span class="lv">${l}</span>`).join("")}<div class="bar2"><i style="width:${pct}%"></i></div></div><div class="chev">›</div></div>`}).join("")||`<div class="empty">Здесь пока нет глав.</div>`}`}
+function partCard(e,i,cur,sub){const open=tOpen===e.id||(tOpen===null&&cur),dn=e.words.filter(isDue).length,nm=partName(e,sub);
+ return `<div class="part ${cur?"cur":""}"><div class="h" onclick="tP('${e.id}')"><div><b>Часть ${i}${nm?" · "+esc(nm):""}</b><small style="display:block">${words_(e.words.length)}${dn?" · 🔁 "+dn+" повторить":""}</small></div><span class="st2 ${cur?"r":""}">${cur?"▶️ читаешь":"✅ прочитано"}</span></div>
+${open?`<div class="wds">${e.words.map(w=>`<div class="wd" onclick="openWord('${w.user_word_id}')"><span class="art ${w.pos==="verb"?"verb":(w.article||"")}">${w.pos==="verb"?"verb":esc(w.article||"")}</span><div class="t"><b class="${w.pos==="verb"?"gold":""}">${esc(w.syllables||w.lemma)}</b><small>${esc(w.translation)}${sounds(w)?" · "+sounds(w):""}</small></div></div>`).join("")}
+${cur?`<button class="btn" onclick="go('next')">▶️ Читать дальше</button>`:""}<a class="link" onclick="openEp('${e.id}')">📖 Открыть текст части</a></div>`:""}</div>`}
+function vSub(s,x){const ps=x.eps,last=ps.length-1,B=TR.block||3,nb=Math.ceil(ps.length/B),cb=Math.floor(Math.max(0,last)/B);
+ const head=`${bk()}<div class="crumb">Главы › ${esc(s.n)} ›</div><div class="ttl">${x.e} ${esc(x.t)}</div><div class="sub">${ps.length?parts_(ps.length)+" · "+words_(x.words)+` · 📖 читаешь часть ${ps.length}`:"ещё не начато"+(x.n?" · "+words_(x.n)+" в теме":"")}${x.lv.length?" · "+x.lv.join(" "):""}</div>`;
+ if(!ps.length)return head+`<div class="card promo" onclick="go('topic')"><div class="e">📖</div><div><b>Начни эту главу в боте</b><p>Слова поселятся в твоём городе и оживут в истории</p></div></div><button class="btn" onclick="go('topic')">▶️ Начать главу</button>`;
+ if(ps.length<=(TR.big||3))return head+ps.map((e,i)=>partCard(e,i+1,i===last,x.t)).join("");
+ const ob=tBlk===null?cb:tBlk;let h=head;
+ for(let b=0;b<nb;b++){const a=b*B,z=Math.min(ps.length,a+B),lab=a+1===z?`Часть ${z}`:`Части ${a+1}–${z}`;
+  h+=b===ob?`<div class="grp">${lab}</div>`+ps.slice(a,z).map((e,j)=>partCard(e,a+j+1,a+j===last,x.t)).join(""):`<div class="part blk" onclick="tB(${b})"><div class="h"><b>${lab}</b><span class="chev">›</span></div></div>`}
+ return h}
+// ---------- r25 «🔄 Полный сброс» (NordSturm 17.10): предупреждение → вписать «OK» (регистр неважен) → edge op "reset"
+// (initData проверяется на сервере; стирается только аккаунт этого initData; бэкап 30 дней; двойное нажатие — один сброс).
+// 14:24: стирается всё, вкл. ассоциации; единственный выбор — свои списки «Мои слова / профессия»: op "reset_info" → N;
+// N > 0 → «У тебя есть свои слова (N). Удалить их тоже?» [Оставить мои слова] (по умолчанию) / [Удалить и мои слова].
+// r25b (PM #171): Cyrillic «ОК» = OK (as the bot and the edge); «↩️ Вернуть мой город» 30 days (op reset_info.restore →
+// item in «Ещё» + on the done screen → confirmation → op "restore"); after the reset the old place names / name are gone.
+let RS={busy:false,msg:"",n:0,keep:true,kept:false,restore:null,info:false};
+const okTxt=v=>/^[oOоО][kKкК][.!]*$/.test(String(v||"").trim());
+const rsDate=v=>{const d=new Date(v||"");return isNaN(d)?"":d.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"})};
+async function rsInfo(force){if(RS.info&&!force)return;RS.info=true;let r={};try{r=await api({op:"reset_info"})}catch(e){r={}}
+ const was=!!RS.restore;RS.restore=r&&r.restore&&r.restore.expires_at?r.restore:null;
+ if(r&&typeof r.own_words==="number")RS.n=Math.max(0,Math.floor(r.own_words));
+ if(was!==!!RS.restore&&(tab==="more"||tab==="resetDone"))render();return r}
+function rsRender(){const i=$("#rsok"),v=i?i.value:"";render();const j=$("#rsok");if(j&&v){j.value=v;rsChk()}}
+async function rsOpen(){RS={...RS,busy:false,msg:"",n:0,keep:true,kept:false};nav("reset");
+ const r=await rsInfo(true)||{};
+ const n=r&&typeof r.own_words==="number"?Math.max(0,Math.floor(r.own_words)):0;   // old edge / error → no question
+ if(n&&tab==="reset"&&!RS.busy){RS.n=n;rsRender()}}
+function rsKeep(k){if(RS.busy)return;RS.keep=!!k;rsRender()}
+function rsChk(){const b=$("#rsb");if(b)b.disabled=RS.busy||!okTxt(($("#rsok")||{}).value)}
+async function doReset(){const v=($("#rsok")||{}).value;if(RS.busy||!okTxt(v))return;RS.busy=true;const b=$("#rsb");if(b){b.disabled=true;b.textContent="Стираю…"}
+ const keep=RS.n?RS.keep:true;
+ let r={};try{r=await api({op:"reset",confirm:String(v).trim(),keep_own:keep})}catch(e){r={error:"server"}}
+ if(r&&r.ok){RS.kept=keep&&RS.n>0&&r.kept_own!==false;
+  // PM #171 Б7: nothing of the old city stays on screen — places, place names, name, plan, «знаю»
+  D={...D,words:[],episodes:[],zones:[],next:null,city:"",name:"",place_names:{},place_names_v:"",kl:null,stats:{words:0,due:0,learned:0,streak:0},reset:true};
+  tSec=tSub=null;nav("resetDone");rsInfo(true);return}
+ RS.busy=false;RS.msg="Не получилось — ничего не стёрто. Попробуй ещё раз.";rsRender()}
+V.reset=function(){return `<div class="bk" onclick="nav('more')">⬅️ Назад</div><div class="ttl">🔄 Полный сброс</div><div class="sub">стереть всё и начать заново</div>
+<div class="card warn"><b>⚠️ Будут стёрты:</b><ul><li>город и все места</li><li>образы, ассоциации и все истории</li><li>словарь и прогресс повторений</li></ul><p>Останутся: уровень, напоминание, часовой пояс${D&&D.coins?", монетки":""}.</p><p>Потом — новая анкета и новый город.</p><p class="mut">↩️ Передумаешь — 30 дней можно вернуть всё: «↩️ Вернуть мой город» в «Ещё».</p></div>
+${RS.n?`<div class="card rsown"><b>📝 У тебя есть свои слова (${RS.n}). Удалить их тоже?</b><div class="seg"><a id="rskeep" class="${RS.keep?"on":""}" onclick="rsKeep(true)">${RS.keep?"✅ ":""}Оставить мои слова</a><a id="rsdrop" class="${RS.keep?"":"on"}" onclick="rsKeep(false)">${RS.keep?"":"✅ "}Удалить и мои слова</a></div><p class="mut">Их ассоциации и истории сотрутся в любом случае — если оставишь, истории к ним создадутся заново.</p></div>`:""}
+<div class="card"><label for="rsok">Чтобы подтвердить, впиши <b>OK</b> (можно «ОК» по-русски)</label><input id="rsok" class="srch rsin" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="OK" oninput="rsChk()">
+<button id="rsb" class="btn danger" disabled onclick="doReset()">🔄 Стереть всё и начать заново</button>${RS.msg?`<p class="rsmsg">${esc(RS.msg)}</p>`:""}</div>
+<a class="link" onclick="nav('more')">Отмена — ничего не стирать</a>`};
+V.resetDone=function(){return `<div class="empty rsdone"><div style="font-size:48px">🧹</div><b>Готово — всё стёрто</b><p>Копия хранится 30 дней${RS.restore?" — до "+esc(rsDate(RS.restore.expires_at)):""}.</p>${RS.kept?`<p>📝 Твои слова (${RS.n}) остались — истории к ним создадутся заново в новом городе.</p>`:""}<p>Теперь новая анкета и новый город — продолжим в боте.</p><button class="btn" onclick="go('new')">▶️ Начать анкету</button>${RS.restore?`<a class="link" id="rsback2" onclick="rrOpen()">↩️ Вернуть мой город</a>`:""}</div>`};
+// PM #171 Б7 / UX 6: after the reset «Главная» and «Город» say honestly that the city comes after the questionnaire
+function rsEmpty(){return `<div class="top"><b style="font-size:24px">Новый старт</b>${verLabel()}</div><div class="empty rsdone"><div style="font-size:48px">🏗</div><b>Город появится после анкеты</b><p>Ответь в боте на вопросы — и слова поселятся в новом городе.</p><button class="btn" onclick="go('new')">▶️ Начать анкету</button>${RS.restore?`<a class="link" onclick="rrOpen()">↩️ Вернуть мой город</a>`:""}</div>`}
+// ---------- r25b #290 «↩️ Вернуть мой город»: confirmation → op "restore" → the payload is loaded again ----------
+let RR={busy:false,msg:""};
+function rrOpen(){RR={busy:false,msg:""};nav("restore")}
+async function doRestore(){if(RR.busy)return;RR.busy=true;const b=$("#rrb");if(b){b.disabled=true;b.textContent="Возвращаю…"}
+ let r={};try{r=await api({op:"restore",confirm:true})}catch(e){r={error:"server"}}
+ if(r&&r.ok){try{const p=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({initData:tg&&tg.initData})});if(p.ok)D=await p.json()}catch(e){}
+  RS.restore=null;RS.info=false;tSec=tSub=null;nav("restoreDone");return}
+ RR.busy=false;RR.msg=r&&r.error==="no_backup"?"Копии для возврата нет — она хранится 30 дней после сброса.":"Не получилось — ничего не изменилось. Попробуй ещё раз.";render()}
+V.restore=function(){const x=RS.restore||{};return `<div class="bk" onclick="nav('more')">⬅️ Назад</div><div class="ttl">↩️ Вернуть мой город?</div><div class="sub">как было до сброса${x.created_at?" "+esc(rsDate(x.created_at)):""}</div>
+<div class="card"><b>Вернётся всё:</b><ul><li>город и все места</li><li>образы, ассоциации и все истории</li><li>словарь и прогресс повторений</li></ul><p>То, что ты сделал после сброса (новая анкета, новый город, новые истории), заменится старым городом.</p>${x.expires_at?`<p class="mut">Копия хранится до ${esc(rsDate(x.expires_at))}.</p>`:""}</div>
+<button id="rrb" class="btn" onclick="doRestore()">✅ Да, вернуть мой город</button>${RR.msg?`<p class="rsmsg">${esc(RR.msg)}</p>`:""}
+<a class="link" onclick="nav('more')">Нет, оставить как есть</a>`};
+V.restoreDone=function(){return `<div class="empty rsdone"><div style="font-size:48px">↩️</div><b>Твой город вернулся</b><p>Места, истории, словарь и прогресс — такие, как были до сброса.</p><button class="btn" onclick="nav('home')">🏠 На главную</button></div>`};
