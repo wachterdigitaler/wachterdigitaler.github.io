@@ -5,8 +5,8 @@
 // 09/09b → 08; a growth event is shown once (growth_seen). One balance number on the whole path (always D.coins).
 // #316 (Tester #204) + NordSturm 18.10: STRICT ≤ 3 buttons on a screen incl. «⬅️ Назад». Монетки = 👛 Кошелёк · 👥 Позвать
 // друга; ONE «👛 Кошелёк» holds Пополнить (packs, receipts), Pro and the token: Кошелёк = ⭐ Пополнить · 👑 Pro (token on:
-// ⭐ Пополнить · ⋯ Ещё → 👑 Pro · ◆ Токен); Пополнить = 1 pack + «⋯ Ещё суммы» a page, the last page 2 packs; receipt
-// «Назад» → Кошелёк; TON wallet = 💎 Купить · ⋯ Ещё (🔁 В монетки · ⋯ Ещё → ↗️ Вывести · Отключить); TON amount typed.
+// ⭐ Пополнить · ⋯ Ещё → 👑 Pro · Ⓜ Токен); Пополнить = 1 pack + «⋯ Ещё суммы» a page, the last page 2 packs; receipt
+// «Назад» → Кошелёк; TON wallet = Ⓜ Купить · ⋯ Ещё (🔁 В монетки · ⋯ Ещё → ↗️ Вывести · Отключить); TON amount typed.
 // #314: the «−10 за часть» line only right after the charge (last_part.fresh), never on a later re-read.
 (function(){
 const CVIEWS=["coins","wallet","walletMore","coinsMore","shop","shop2","shop3","shop4","shop5","shopOk","tokenMore","tokenMore2","pro","ref","token","tokenBuy","tokenBuyOk","tokenConv","tokenConvOk","tokenEarn","tokenOut","tokenOutOk","gEvent"];
@@ -33,7 +33,7 @@ const CV=window.CV={
 CV.chip=()=>C()?`<div class="cchip" id="cchip" onclick="CV.open('coins')">${coin(bal())}${proOn()?` <span class="pro">👑 Pro</span>`:""}</div>`:"";   // PM #324: Home = the Ⓜ plaque only — no flying «−10» (it was clipped at the top); the line stays under the part
 CV.partLine=sid=>{const c=C(),lp=c&&c.last_part;if(!lp||!lp.fresh||(sid&&lp.story_id!==sid))return "";const n=F().daily_n||5,b=[];
  if(lp.daily)b.push(`+${F().daily_bonus||200} за ${n} слов`);if(lp.delta)b.push(`−${Math.abs(lp.delta)} за часть`);b.push(`у тебя ${bal()}`);
- return `<div class="cline" id="cline"><i>Ⓜ ${b.join(" · ")}</i></div>`};
+ return `<div class="cline" id="cline"><i><span class="cn">Ⓜ</span> ${b.join(" · ")}</i></div>`};
 const _book=V.book;
 V.book=V.home=function(){let h=_book();if(!C()||D.reset)return h;
  h=h.replace(/<div class="ver">/,CV.chip()+'<div class="ver">');
@@ -56,20 +56,20 @@ ${how?`<div class="card"><h3>Как получить</h3>${how}</div>`:""}${(c.h
 V.wallet=function(){const c=C(),f=F();return `${bk}<div class="ttl">👛 Кошелёк <span class="tag">🧪 тест</span></div><div class="card"><div class="hl"><span>У тебя</span><b id="wbal">${coin(bal())}</b></div><small class="mut">заработано ${c.earned} · куплено ${c.purchased}</small>${proOn()?`<div class="hl"><span>👑 Pro</span><b>до ${esc(ruDate(c.pro_until))}</b></div>`:""}</div>
 <div class="row2"><button class="btn" id="toshop" onclick="CV.open('shop')">⭐ Пополнить</button>${f.token?`<button class="btn sec" id="wmore" onclick="CV.open('walletMore')">⋯ Ещё</button>`:`<button class="btn sec" id="topro" onclick="CV.open('pro')">👑 Pro</button>`}</div>`};
 V.walletMore=()=>`${bk}<div class="ttl">👛 Кошелёк · ещё <span class="tag">🧪 тест</span></div><div class="card"><div class="hl"><span>У тебя</span><b>${coin(bal())}</b></div></div>
-<div class="row2"><button class="btn sec" id="topro" onclick="CV.open('pro')">👑 Pro</button><button class="btn tok" id="totoken" onclick="CV.open('token')"><span class="dia">◆</span> Токен</button></div>`;
+<div class="row2"><button class="btn sec" id="topro" onclick="CV.open('pro')">👑 Pro</button><button class="btn tok" id="totoken" onclick="CV.open('token')"><span class="cn">Ⓜ</span> Токен</button></div>`;
 V.coinsMore=V.wallet;   // the unreleased «Монетки · ещё» → Кошелёк
 // ---------- M2 Пополнить → квитанция (replace) ----------
 // strict ≤ 3 incl. «Назад»: one pack + «⋯ Ещё суммы» a page, the last page two packs (≤ 2 packs → one page)
 const packs=()=>F().packs||[], SHOPV=["shop","shop2","shop3","shop4","shop5"];
 const shopPages=()=>{const n=packs().length,r=[];let i=0;while(n-i>2&&r.length<SHOPV.length-1){r.push([i,i+1]);i++}r.push([i,n]);return r};
 const shopPg=k=>{const pg=shopPages(),[a,b]=pg[Math.min(k,pg.length-1)],more=k<pg.length-1;
- return `${bk}<div class="ttl">⭐ Пополнить</div>${TEST}<div class="packs">${packs().map((p,i)=>i<a||i>=b?"":`<div class="pack" id="pk${i}" onclick="CV.buy(${i})"><b>+${p.coins} Ⓜ</b><small>${esc(p.name)}</small></div>`).join("")}</div>${more?`<button class="btn sec" id="shopmore" onclick="CV.open('${SHOPV[k+1]}')">⋯ Ещё суммы</button>`:""}`};
+ return `${bk}<div class="ttl">⭐ Пополнить</div>${TEST}<div class="packs">${packs().map((p,i)=>i<a||i>=b?"":`<div class="pack" id="pk${i}" onclick="CV.buy(${i})"><b>+${p.coins} <span class="cn">Ⓜ</span></b><small>${esc(p.name)}</small></div>`).join("")}</div>${more?`<button class="btn sec" id="shopmore" onclick="CV.open('${SHOPV[k+1]}')">⋯ Ещё суммы</button>`:""}`};
 SHOPV.forEach((v,k)=>{V[v]=()=>shopPg(k)});
 let BUSY=false, OK={};
 CV.buy=async i=>{if(BUSY)return;BUSY=true;const p=(F().packs||[])[i];const r=await CV.op({op:"coins_buy",pack:i});BUSY=false;
  if(r.ok){OK={n:p.coins,name:p.name};CST=CST.filter(v=>!SHOPV.includes(v));CV.rep("shopOk")}   // receipt «Назад» → Кошелёк
  else toast("Не получилось — попробуй ещё раз")};
-V.shopOk=function(){return `${bk}<div class="ttl">🧪 Тестовая покупка</div>${TEST}<div class="hero cbig"><div class="big">+${OK.n} Ⓜ</div><small>${esc(OK.name)} · ничего не списано</small></div><div class="card"><div class="hl"><span>У тебя</span><b id="okbal">${bal()}</b></div></div><button class="btn" onclick="nav('home')">📖 К книге</button>`};
+V.shopOk=function(){return `${bk}<div class="ttl">🧪 Тестовая покупка</div>${TEST}<div class="hero cbig"><div class="big">+${OK.n} <span class="cn">Ⓜ</span></div><small>${esc(OK.name)} · ничего не списано</small></div><div class="card"><div class="hl"><span>У тебя</span><b id="okbal">${bal()}</b></div></div><button class="btn" onclick="nav('home')">📖 К книге</button>`};
 // ---------- M3 Pro ----------
 V.pro=function(){const on=proOn();return `${bk}<div class="ttl">👑 Pro</div>${TEST}<div class="card"><div class="hl"><span>• свои слова и списки</span></div><div class="hl"><span>• другие темы и поиск по ним</span></div><small class="mut">временно — состав Pro уточняется</small></div>
 ${on?`<div class="card"><b>👑 Pro до ${esc(ruDate(C().pro_until))}</b></div>`:`<button class="btn" id="proon" onclick="CV.pro()">👑 Pro · тест</button>`}`};
@@ -77,31 +77,31 @@ CV.pro=async()=>{if(BUSY)return;BUSY=true;await CV.op({op:"coins_pro"});BUSY=fal
 // ---------- M4 Друзья ----------
 V.ref=function(){const r=C().ref||{},f=F(),link=r.code?`https://t.me/${BOT}?start=r_${r.code}`:"";
  if(!r.code&&!CV._rq){CV._rq=1;CV.op({op:"ref_code"}).then(()=>{CV._rq=0;if(tab==="ref")render()})}
- return `${bk}<div class="ttl">👥 Позвать друга</div><div class="card"><p>Друг получит +${f.referral_bonus} Ⓜ, ты — +${f.referral_bonus} Ⓜ, когда он вспомнит 5 слов в два разных дня.</p>${f.referral_pro_at?`<p>${f.referral_pro_at} друзей → 👑 Pro на месяц</p>`:""}<div class="hl"><span>Засчитано</span><b>${r.counted||0}</b></div></div>
+ return `${bk}<div class="ttl">👥 Позвать друга</div><div class="card"><p>Друг получит +${f.referral_bonus} <span class="cn">Ⓜ</span>, ты — +${f.referral_bonus} <span class="cn">Ⓜ</span>, когда он вспомнит 5 слов в два разных дня.</p>${f.referral_pro_at?`<p>${f.referral_pro_at} друзей → 👑 Pro на месяц</p>`:""}<div class="hl"><span>Засчитано</span><b>${r.counted||0}</b></div></div>
 ${link?`<div class="card lnk" id="reflink">${esc(link)}</div><div class="row2"><button class="btn sec" onclick="CV.copy('${link}')">📋 Копировать</button><button class="btn" onclick="CV.share('${link}')">📤 Поделиться</button></div>`:`<div class="card">Готовлю ссылку…</div>`}`};
 CV.copy=l=>{try{navigator.clipboard.writeText(l)}catch(e){}toast("Ссылка скопирована")};
 CV.share=l=>{const u="https://t.me/share/url?url="+encodeURIComponent(l);try{tg&&tg.openTelegramLink?tg.openTelegramLink(u):window.open(u)}catch(e){}};
 // ---------- 7Т Токен (макет: без TON-сети и SDK, «подключено» — фейк) ----------
 const tokBal=()=>C()?C().token:0;
-V.token=function(){if(!TK.on)return `${bk}<div class="ttl"><span class="dia">◆</span> Токен ${TN()}</div>${TTEST}<div class="card"><p>Кошелёк не подключён.</p><p>Подключи кошелёк TON, чтобы покупать и выводить ${TN()}.</p></div><button class="btn tonb" id="tconn" onclick="CV.conn(1)">🔗 Подключить кошелёк</button>`;
- return `${bk}<div class="ttl"><span class="dia">◆</span> Токен ${TN()}</div>${TTEST}<div class="card"><div class="hl"><span>Кошелёк</span><b>UQ…TeSt (тест)</b></div><div class="hl"><span>${TN()}</span><b id="tbal">${tokBal()}</b></div></div>
+V.token=function(){if(!TK.on)return `${bk}<div class="ttl"><span class="cn">Ⓜ</span> Токен ${TN()}</div>${TTEST}<div class="card"><p>Кошелёк не подключён.</p><p>Подключи кошелёк TON, чтобы покупать и выводить ${TN()}.</p></div><button class="btn tonb" id="tconn" onclick="CV.conn(1)">🔗 Подключить кошелёк</button>`;
+ return `${bk}<div class="ttl"><span class="cn">Ⓜ</span> Токен ${TN()}</div>${TTEST}<div class="card"><div class="hl"><span>Кошелёк</span><b>UQ…TeSt (тест)</b></div><div class="hl"><span>${TN()}</span><b id="tbal">${tokBal()}</b></div></div>
 <div class="card"><h3>✨ Как заработать ${TN()}</h3><div class="hl"><span>каждые 10 осевших слов</span><b class="pl">+1</b></div><div class="hl"><span>новая ступень города</span><b class="pl">+10</b></div><div class="hl"><span>друг засчитан</span><b class="pl">+5</b></div></div>
-<div class="row2"><button class="btn tonb" id="tbuy" onclick="CV.open('tokenBuy')">💎 Купить за TON</button><button class="btn sec" id="tmore" onclick="CV.open('tokenMore')">⋯ Ещё</button></div>`};
-V.tokenMore=()=>`${bk}<div class="ttl"><span class="dia">◆</span> ${TN()} · ещё</div>${TTEST}<div class="card"><div class="hl"><span>${TN()}</span><b>${tokBal()}</b></div></div>
+<div class="row2"><button class="btn tonb" id="tbuy" onclick="CV.open('tokenBuy')"><span class="cn">Ⓜ</span> Купить за TON</button><button class="btn sec" id="tmore" onclick="CV.open('tokenMore')">⋯ Ещё</button></div>`};
+V.tokenMore=()=>`${bk}<div class="ttl"><span class="cn">Ⓜ</span> ${TN()} · ещё</div>${TTEST}<div class="card"><div class="hl"><span>${TN()}</span><b>${tokBal()}</b></div></div>
 <div class="row2"><button class="btn sec" id="tconv" onclick="CV.open('tokenConv')">🔁 В монетки</button><button class="btn sec" id="tmore2" onclick="CV.open('tokenMore2')">⋯ Ещё</button></div>`;
-V.tokenMore2=()=>`${bk}<div class="ttl"><span class="dia">◆</span> ${TN()} · ещё</div>${TTEST}<div class="card"><div class="hl"><span>${TN()}</span><b>${tokBal()}</b></div></div>
+V.tokenMore2=()=>`${bk}<div class="ttl"><span class="cn">Ⓜ</span> ${TN()} · ещё</div>${TTEST}<div class="card"><div class="hl"><span>${TN()}</span><b>${tokBal()}</b></div></div>
 <div class="row2"><button class="btn sec" id="tout" onclick="CV.open('tokenOut')">↗️ Вывести</button><button class="btn sec warn" id="tdisc" onclick="CV.disc()">Отключить кошелёк</button></div>`;
 CV.conn=v=>{TK.on=!!v;render()};CV.TK=TK;
 CV.disc=()=>{TK.on=false;CST=CST.filter(v=>v!=="tokenMore"&&v!=="tokenMore2");CV.back()};   // back to the token screen, now «не подключён»
 CV.amt=(id,max)=>{const v=parseInt((document.getElementById(id)||{}).value||"0",10);return Math.max(0,Math.min(isNaN(v)?0:v,max||1e5))};
-V.tokenBuy=function(){const r=F().ton_rate||100;return `${bk}<div class="ttl">💎 Купить ${TN()} за TON</div>${TTEST}
+V.tokenBuy=function(){const r=F().ton_rate||100;return `${bk}<div class="ttl"><span class="cn">Ⓜ</span> Купить ${TN()} за TON</div>${TTEST}
 <input class="srch" id="tbin" inputmode="numeric" placeholder="сколько TON, например 5" value="${TK.buy||""}" oninput="CV.TK.buy=parseInt(this.value||'0',10)||0">${F().token_show_rate?`<small class="mut">1 TON = ${r} ${TN()}</small>`:""}
 <button class="btn tonb" id="tbgo" onclick="CV.tok('token_in',(CV.TK.buy||0)*${r},'tokenBuyOk')">Купить (тест)</button>`};
 V.tokenBuyOk=()=>`${bk}<div class="ttl">🧪 Готово</div>${TTEST}<div class="hero cbig"><div class="big">+${TK.last} ${TN()}</div><small>TON не списаны</small></div><div class="card"><div class="hl"><span>${TN()}</span><b>${tokBal()}</b></div></div>`;
 V.tokenConv=function(){return `${bk}<div class="ttl">🔁 ${TN()} в монетки</div>${TTEST}<div class="card"><div class="hl"><span>${TN()}</span><b>${tokBal()}</b></div></div>
-<input class="srch" id="tcin" inputmode="numeric" placeholder="сколько ${TN()}"><a class="link" onclick="document.getElementById('tcin').value=${tokBal()}">Всё</a><small class="mut">→ столько же Ⓜ</small>
+<input class="srch" id="tcin" inputmode="numeric" placeholder="сколько ${TN()}"><a class="link" onclick="document.getElementById('tcin').value=${tokBal()}">Всё</a><small class="mut">→ столько же <span class="cn">Ⓜ</span></small>
 <button class="btn tonb" id="tcgo" onclick="CV.tok('token_convert',CV.amt('tcin',${tokBal()}),'tokenConvOk')">Обменять (тест)</button>`};
-V.tokenConvOk=()=>`${bk}<div class="ttl">🧪 Готово</div>${TTEST}<div class="hero cbig"><div class="big">−${TK.last} ${TN()} · +${TK.last} Ⓜ</div></div><div class="card"><div class="hl"><span>У тебя</span><b>${coin(bal())}</b></div><div class="hl"><span>${TN()}</span><b>${tokBal()}</b></div></div>`;
+V.tokenConvOk=()=>`${bk}<div class="ttl">🧪 Готово</div>${TTEST}<div class="hero cbig"><div class="big">−${TK.last} ${TN()} · +${TK.last} <span class="cn">Ⓜ</span></div></div><div class="card"><div class="hl"><span>У тебя</span><b>${coin(bal())}</b></div><div class="hl"><span>${TN()}</span><b>${tokBal()}</b></div></div>`;
 V.tokenEarn=()=>`${bk}<div class="ttl">✨ Заработать ${TN()}</div>${TTEST}<div class="card"><div class="hl"><span>каждые 10 осевших слов</span><b class="pl">+1</b></div><div class="hl"><span>новая ступень города</span><b class="pl">+10</b></div><div class="hl"><span>друг засчитан</span><b class="pl">+5</b></div></div><div class="card"><div class="hl"><span>Начислено (тест)</span><b>${tokBal()} ${TN()}</b></div></div>`;
 V.tokenOut=function(){return `${bk}<div class="ttl">↗️ Вывести ${TN()}</div>${TTEST}<div class="card">на кошелёк UQ…TeSt</div><input class="srch" id="toin" inputmode="numeric" placeholder="сколько ${TN()}"><a class="link" onclick="document.getElementById('toin').value=${tokBal()}">Всё</a>
 <button class="btn tonb" id="togo" onclick="CV.tok('token_withdraw',CV.amt('toin',${tokBal()}),'tokenOutOk')">Вывести (тест)</button>`};
@@ -109,9 +109,9 @@ V.tokenOutOk=()=>`${bk}<div class="ttl">🧪 Вывод не выполняет�
 CV.tok=async(kind,n,ok)=>{if(BUSY)return;if(!n||n<1)return toast("Впиши сумму");BUSY=true;const r=await CV.op({op:"token",kind,amount:n});BUSY=false;
  if(r.ok){TK.last=r.amount;CST=CST.filter(v=>v!=="tokenMore"&&v!=="tokenMore2");CV.rep(ok)}else toast("Не получилось — попробуй ещё раз")};
 // ---------- M6 Город: ступень + карта A; M7 событие роста (один раз) ----------
-const GR=window.GR={name:["стоянка","Костёр","Деревня","Село","ПГТ","Город","Сити-центр"],icon:["⛺","🪵","🛖","🏡","🏘","🏙","🌆"],
+const GR=window.GR={name:["Костёр","Стоянка","Деревня","Село","ПГТ","Город","Сити-центр"],icon:["🔥","⛺","🛖","🏡","🏘","🏙","🌆"],
  // RC 18.10 22:47 (NordSturm «Мой город»): what the settlement is now — mirrors core/growth.py DESC
- desc:["Палатка на пустом месте — город только начинается.","У огня собираются первые места: слова начали оседать.","Несколько домов и тропинки между районами.","Улицы и свои места в каждом открытом районе.","Посёлок: районы застроены, появляются новые уголки.","Все районы живут, места на каждой улице.","Город построен целиком — от окраин до центра."]};
+ desc:["Костёр на пустом месте — город только начинается.","У стоянки собираются первые места: слова начали оседать.","Несколько домов и тропинки между районами.","Улицы и свои места в каждом открытом районе.","Посёлок: районы застроены, появляются новые уголки.","Все районы живут, места на каждой улице.","Город построен целиком — от окраин до центра."]};
 const _city=V.city;
 V.city=function(){let h=_city();if(!C()||!F().growth||D.reset)return h;const g=C().growth||{},s=g.stage||0,nx=g.next;
  const card=`<div class="card gcard" data-growth-slot="map" data-concept="${esc(F().concept||"AB")}" data-stage="${s}">${MAPA.svg(s,D.growth_map||{})}
@@ -123,7 +123,7 @@ window.nav=function(t,o){if(t==="city"&&C()&&F().growth&&!D.reset){const g=C().g
 V.gEvent=function(){const e=CV._ev||{from:0,to:0},to=e.to,np=MAPA.newPlace(to,D.growth_map||{}),st=F().stages||[10,40,120,400,900,2750];
  const skip=to-e.from>1?`<p class="mut">Пока тебя не было, выросли ${GR.name.slice(e.from+1,to).join(" и ")}.</p>`:"";
  const q=(C().growth||{}).quote;
- return `${bk}<div class="gev" data-growth-slot="event" data-concept="${esc(F().concept||"AB")}"><small>Глава ${to}</small><div class="ttl">${esc(GR.icon[to]+" "+GR.name[to])}</div>${MAPA.svg(to,D.growth_map||{},np&&np[1])}
+ return `${bk}<div class="gev" data-growth-slot="event" data-concept="${esc(F().concept||"AB")}"><div class="ttl">${esc(GR.icon[to]+" Ступень "+to+" · "+GR.name[to])}</div>${MAPA.svg(to,D.growth_map||{},np&&np[1])}
 <p>${st[to-1]||0} слов осели — ${np?`в районе «${esc(np[0])}» появилось новое место: «${esc(np[1])}».`:"туман над окраиной рассеялся."}</p>${skip}${q?`<p class="quote">«${esc(q)}»</p>`:""}</div>
 <button class="btn" id="evnext" onclick="CV._ev=null;nav('city',{replace:true})">Дальше</button>`};
 CV.evBack=()=>{CV._ev=null;nav("city")};

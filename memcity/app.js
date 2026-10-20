@@ -1,6 +1,6 @@
 const API="https://wbrpcvbpipeejdnsymdz.supabase.co/functions/v1/memcity-app", BOT="fixDeutsch_bot";
 // APP_VERSION — single source for cache-bust ?v= and the label; tools/bump_version.sh updates these + index.html
-const APP_VERSION="3.8.0", APP_BUILT="20.10 11:32";
+const APP_VERSION="3.8.2", APP_BUILT="20.10 21:56";
 const verLabel=()=>`<div class="ver">Версия ${esc(APP_VERSION)}</div>`;
 const tg=window.Telegram&&Telegram.WebApp; if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#0b0b0f");tg.setBackgroundColor("#0b0b0f")}catch(e){}}
 const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -13,7 +13,9 @@ const R23=(()=>{const f={status:false,readnext:true,kl:true,map:true,nextpart:tr
  String(new URLSearchParams(location.search).get("r23")||"").split(",").forEach(t=>{t=t.trim();if(/^[+-]?\w+$/.test(t))f[t.replace(/^[+-]/,"")]=t[0]!=="-"});return f})();
 let D=null, wl=[], wi=0, prev="home", tab="home", epId=null, q="", homeTab="zones", HV=null, BCID=null;
 const ZK={der:["🔵","der","#2d6cff,#1a3d99"],die:["🔴","die","#ff5d8a,#a3244c"],das:["🟢","das","#22c58b,#0e7a55"],verb:["🟡","глаголы","#f5c542,#b07d00"]};
-const kindOf=w=>w.pos==="verb"?"verb":(w.article||w.zone_kind||"das");
+// #442: the learner's own word (payload «own») — its district for grouping, never «das» by default, no gender colour, label «своё»
+const isOwn=w=>!!(w&&(w.own||w.source==="learner-own"||(Array.isArray(w.flags)&&w.flags.includes("own")))),ownTr=w=>w.translation?"твой перевод: "+w.translation:"своё слово, без перевода",trOf=w=>isOwn(w)?ownTr(w):w.translation;
+const kindOf=w=>w.pos==="verb"?"verb":(w.article||w.zone_kind||(isOwn(w)?"verb":"das"));
 const isDue=w=>w.due_at&&Date.parse(w.due_at)<=Date.now();
 const sparts=a=>(Array.isArray(a)?a:[a]).flatMap(s=>String(s??"").split("+")).map(s=>s.trim()).filter(Boolean); // #134: «халат+усы» → «халат» + «усы»
 const qs=a=>sparts(a).map(s=>"<b class=\"snd\">"+esc(s)+"</b>").join(" + ");   // PM #249: sound-alikes bold
@@ -67,7 +69,7 @@ function placeOf0(raw){let s=String(raw||"").trim();if(!s)return {t:"",c:""};
  const cut=x=>x.length>42?x.slice(0,40).replace(/\s+\S*$/,"")+"…":x, cap=x=>x?x[0].toUpperCase()+x.slice(1):x;
  const t=cap(cut(fix(s))),c=cut(fix(ctx));return {t:MP.isTech(t)?"":t,c:MP.isTech(c)?"":c}}
 const ptxt=w=>placeOf(w.place,w.place_label).t||zname(kindOf(w));
-const word=w=>`<div class="w" onclick="openWord('${w.user_word_id}')"><span class="art ${w.pos==="verb"?"verb":(w.article||"")}">${w.pos==="verb"?"verb":esc(w.article||"")}</span><div class="t"><b>${esc(w.syllables||w.lemma)}</b><small><span class="tr">${esc(w.translation)}</span>${sounds(w)?" · "+sounds(w):""}${" · 📍 "+esc(ptxt(w))}</small></div>${stl(w)}</div>`;
+const word=w=>`<div class="w" onclick="openWord('${w.user_word_id}')">${isOwn(w)?`<span class="art own">своё</span>`:`<span class="art ${w.pos==="verb"?"verb":(w.article||"")}">${w.pos==="verb"?"verb":esc(w.article||"")}</span>`}<div class="t"><b>${isOwn(w)?"🎒 ":""}${esc(w.syllables||w.lemma)}</b><small><span class="tr">${esc(trOf(w))}</span>${sounds(w)?" · "+sounds(w):""}${" · 📍 "+esc(ptxt(w))}</small></div>${stl(w)}</div>`;
 function tt(t){return String(t||"").replace(/^\s*\u0421\u0435\u0440\u0438\u044f\s+(\d+):\s*(.+)$/i,"«$2» · часть $1")}
 function nounGold(s,ws){/* r22d #178: 🟡 = verbs only */const nn=new Set((ws||[]).filter(w=>w.article).map(w=>String(w.lemma||"").toLowerCase()));return String(s||"").replace(/🟡\s?(\*\*([^*]+)\*\*|[^\s.,!?;:]+)/g,(m,t,b)=>{const k=(b||t).replace(/^(der|die|das|den|dem|des)\s+/i,"").toLowerCase();return nn.has(k)?t:m})}
 function md(s,ws){s=MP.noPlan(s);s=MP.road(s);s=syncKey(s,ws);if(MP.keyLegend)s=MP.keyLegend(s,znames()).replace(/^(Места: .*)$/mu,m=>m.replace(/🟡/gu,"\uE000"));return boldAssoc(esc(nounGold(s,ws)),ws).replace(/🟡\s?\*\*(.+?)\*\*/g,"<b class=\"v\">$1</b>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/🟡\s?([^\s.,!?;:]+)/g,"<b class=\"v\">$1</b>").split(/\n{2,}/).map(p=>"<p>"+p.replace(/\n/g,"<br>")+"</p>").join("").replace(/\uE000/g,"🟡")}
@@ -132,19 +134,19 @@ ${R23.legend&&R23.status?`<p class="legend"><span class="rs now">🔁 сегод
 eps(){return `<div class="top"><b style="font-size:24px">Мои главы</b><div class="chip" onclick="go('next')">▶️ Читать дальше</div></div>${eps()}`},
 ep(){const e=D.episodes.find(x=>x.id===epId);if(!e)return V.eps();return `<div class="top"><div style="font-size:26px;cursor:pointer" onclick="goBack()">‹</div><b>${esc(tt(e.title))}</b><div></div></div>
 <div class="card story read">${md(e.body,e.words)}</div>
-${R23.map?`<details class="card map"><summary>🗺 Карта главы · ${e.words.length} ${plr(e.words.length,"слово","слова","слов")}</summary>${e.words.map(w=>`<div>${isDue(w)?"🔁 ":""}📍 ${esc(ptxt(w))} — <b onclick="openWord('${w.user_word_id}')" style="text-decoration:underline dotted">${esc((w.article?w.article+" ":"")+w.lemma)}</b> (${esc(w.translation)}) · ${esc(w.syllables||w.lemma)}${sounds(w)?" → "+sounds(w):""}</div>`).join("")}</details>`:""}
+${R23.map?`<details class="card map"><summary>🗺 Карта главы · ${e.words.length} ${plr(e.words.length,"слово","слова","слов")}</summary>${e.words.map(w=>`<div>${isDue(w)?"🔁 ":""}📍 ${esc(ptxt(w))} — <b onclick="openWord('${w.user_word_id}')" style="text-decoration:underline dotted">${isOwn(w)?"🎒 ":""}${esc((w.article?w.article+" ":"")+w.lemma)}</b> (${esc(isOwn(w)?(w.translation||"своё слово"):w.translation)}) · ${esc(w.syllables||w.lemma)}${sounds(w)?" → "+sounds(w):""}</div>`).join("")}</details>`:""}
 <div class="seg"><span class="chip" onclick="go('st_${e.id}','check')">🧠 Проверить себя</span><span class="chip" onclick="go('st_${e.id}','rw')">✏️ Переписать часть</span><span class="chip" onclick="go('st_${e.id}','tts')">🔊 Озвучить</span></div>
 ${R23.nextpart?`<button class="btn" onclick="go('next')">▶️ Следующая часть</button><a class="link" onclick="go('st_${e.id}','check')">Проверить себя</a>`:`<button class="btn" onclick="go('review')">🔁 Повторить слова этой главы</button>`}`},
 dict(){const ws=D.words.filter(w=>!q||(w.lemma+" "+w.translation).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>a.lemma.localeCompare(b.lemma,"de"));
  return `<div class="top"><b style="font-size:24px">Словарь</b><div class="chip">${D.words.length}</div></div>
 ${R23.kl?`<div class="card kc" onclick="openKl()"><div class="w"><div class="t"><b>☑ Что уже знаешь?</b><small>отметь знакомые слова следующей части — книга не будет тратить на них страницы</small></div>›</div></div>`:""}${revRow(D.words)}${!D.words.length?"":`<input class="srch" placeholder="Поиск: слово или перевод" value="${esc(q)}" oninput="q=this.value;const c=this.selectionStart;render();const i=$('.srch');i.focus();i.setSelectionRange(c,c)">`}
 ${!D.words.length?emptyCTA("Тут появятся слова твоей первой главы","Каждое слово получит своё место в твоём городе и смешную историю."):`<div class="card">${ws.map(word).join("")||`<div class="empty">По запросу «${esc(q)}» слов нет — попробуй немецкое слово или перевод.</div>`}</div>`}`},
-word(){const w=wl[wi];if(!w)return V.book();const k=kindOf(w),col={der:"#7aa6ff",die:"#ff8fb0",das:"#6ff0a8",verb:"#f5c542"}[k];const p=placeOf(w.place,w.place_label);
+word(){const w=wl[wi];if(!w)return V.book();const k=kindOf(w),col=isOwn(w)?"#cfcfda":{der:"#7aa6ff",die:"#ff8fb0",das:"#6ff0a8",verb:"#f5c542"}[k];const p=placeOf(w.place,w.place_label);
  const due=w.due_at?new Date(w.due_at):null,dd=(x=>x[0].toUpperCase()+x.slice(1))(repLine(w)),dl=due&&due.getFullYear()<2090&&!isDue(w)?due.toLocaleDateString("ru-RU",{day:"numeric",month:"long"}):"";
  return `<div class="top"><div style="font-size:26px;cursor:pointer" onclick="back()">‹</div><div class="chip">${wi+1} / ${wl.length}</div><div style="font-size:26px;cursor:pointer" onclick="say()">🔊</div></div>
-${CARD_V2?card2(w,k,col,p):`<div class="hero" style="text-align:center;padding:28px 18px"><span class="art big ${w.pos==="verb"?"verb":(w.article||"")}">${esc(w.pos==="verb"?"глагол":w.article||"")}</span>
-<div class="big" style="font-size:46px;color:${col}">${esc(w.lemma)}</div><div style="font-size:20px;color:#cfcfda">${esc(w.syllables||w.lemma)}</div><div style="margin-top:8px;font-size:18px">${esc(w.translation)}${w.plural?` <span style="color:var(--mut)">· мн. ${esc(w.plural)}</span>`:""}</div></div>
-<div class="card" style="margin-top:12px"><h3 style="display:flex;justify-content:space-between">📍 ${esc(p.t||zname(k))}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️</span>`:""}</h3><small class="art-l">${ZK[k][0]} ${esc(artLbl(k))}</small>
+${CARD_V2?card2(w,k,col,p):`<div class="hero" style="text-align:center;padding:28px 18px">${isOwn(w)?`<span class="art big own">🎒 своё</span>`:`<span class="art big ${w.pos==="verb"?"verb":(w.article||"")}">${esc(w.pos==="verb"?"глагол":w.article||"")}</span>`}
+<div class="big" style="font-size:46px;color:${col}">${esc(w.lemma)}</div><div style="font-size:20px;color:#cfcfda">${esc(w.syllables||w.lemma)}</div><div style="margin-top:8px;font-size:18px">${esc(trOf(w))}${w.plural?` <span style="color:var(--mut)">· мн. ${esc(w.plural)}</span>`:""}</div></div>
+<div class="card" style="margin-top:12px"><h3 style="display:flex;justify-content:space-between">📍 ${esc(p.t||zname(k))}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️</span>`:""}</h3><small class="art-l">${isOwn(w)?"🎒 своё слово":`${ZK[k][0]} ${esc(artLbl(k))}`}</small>
 ${sounds(w)?`<div style="margin-top:10px;font-size:17px">🔤 ${esc(w.syllables||w.lemma)} → ${sounds(w)}</div>`:""}</div>
 ${w.image?`<div class="card story"><h3>🎬 Образ</h3><p>${R23.boldsnd?boldAssoc(esc(MP.road(String(w.image)).replace(/\*\*/g,"")),[w]):esc(MP.road(String(w.image)).replace(/\*\*/g,""))}</p></div>`:""}`}
 <div class="card"><div class="w"><div class="t"><b>${dd}</b><small>${dl?"📅 "+dl+(w.interval_days?" · ":""):""}${w.interval_days?`интервал ${w.interval_days} ${plr(w.interval_days,"день","дня","дней")}`:""}</small></div>${stl(w)}</div></div>
@@ -172,7 +174,7 @@ async function openKl(){try{KL=await api({op:"kl"})}catch(e){KL={error:"server"}
 async function klT(id){const all=[...(KL.part||[]),...(KL.all||[])].filter(w=>w.id===id);if(!all.length)return;const on=!all[0].known;all.forEach(w=>w.known=on);render();
  try{tg&&tg.HapticFeedback&&tg.HapticFeedback.impactOccurred("light")}catch(e){}
  wq(id,on,()=>api({op:on?"skip":"unskip",word_id:id}),(v,r)=>{all.forEach(w=>w.known=v);KL.msg=r.message||"Не получилось сохранить — попробуй ещё раз";render();setTimeout(()=>{KL.msg="";render()},2600)})}
-const klRow=w=>`<div class="kl ${w.known?"on":""}" onclick="klT('${w.id}')"><div class="t"><strong class="${w.verb?"v":""}">${w.verb?"🟡 ":""}${esc((w.article?w.article+" ":"")+w.lemma)}</strong><small>${esc(w.translation)}${w.known?" · знаю":""}</small></div><span class="cb">${w.known?"✓":""}</span></div>`;
+const klRow=w=>`<div class="kl ${w.known?"on":""}" onclick="klT('${w.id}')"><div class="t"><strong class="${w.verb&&!isOwn(w)?"v":""}">${isOwn(w)?"🎒 ":w.verb?"🟡 ":""}${esc((w.article?w.article+" ":"")+w.lemma)}</strong><small>${esc(isOwn(w)?ownTr(w):w.translation)}${w.known?" · знаю":""}</small></div><span class="cb">${w.known?"✓":""}</span></div>`;
 V.kl=function(){if(!KL||KL.error||!KL.chapter)return `<div class="back" onclick="goBack()">‹</div><div class="empty">Список появится, когда начнётся глава.<a class="main" onclick="go('next')">▶️ Читать дальше</a></div>`;
  const ws=klMode==="part"?KL.part:KL.all,kn=ws.filter(w=>w.known).length;
  return `<div class="back" onclick="goBack()">‹</div><div class="hd"><div class="sub">📖 ${esc(KL.chapter.title)}${KL.chapter.n?` · часть ${KL.chapter.n}`:""}</div><h1>Что уже знаешь?</h1></div>
@@ -181,7 +183,7 @@ V.kl=function(){if(!KL||KL.error||!KL.chapter)return `<div class="back" onclick=
 <div class="card" style="padding:0 16px">${ws.map(klRow).join("")||`<div class="empty">Все слова этой главы уже в историях</div>`}</div>
 <div class="sub" style="margin:6px 4px 0">${kn?`Знаю: ${kn} · учим: ${ws.length-kn}`:"Пока всё учим"}</div>
 ${KL.msg?`<div class="toast">${esc(KL.msg)}</div>`:""}
-<a class="main stick" onclick="go('go_${KL.chapter.id}')">▶️ Готово — пишем часть</a>`};
+<a class="main stick" onclick="go('go_${KL.chapter.id}${Number.isInteger(KL.chapter.p)?"_"+KL.chapter.p:""}')">▶️ Готово — пишем часть</a>`};   // #426: go_<cid>_<parts written> — an outdated / repeated link writes nothing
 const NAV=[["home","🏠","Главная"],["eps","🎬","Главы"],["city","🏙","Город"],["dict","📖","Словарь"],["more","⋯","Ещё"]];
 function openWord(id){const src=tab==="ep"?(D.episodes.find(e=>e.id===epId)||{words:[]}).words:tab==="dict"?D.words.slice().sort((a,b)=>a.lemma.localeCompare(b.lemma,"de")):(tab==="home"||tab==="book")?D.words.filter(isDue):D.words;
  wl=src.length?src:D.words;wi=Math.max(0,wl.findIndex(w=>w.user_word_id===id));if(tab!=="word")prev=tab;nav("word")}
@@ -241,11 +243,11 @@ const CARD_V2=R23.card2||new URLSearchParams(location.search).get("card2")==="1"
 const DOTS={der:"🔵",die:"🔴",das:"🟢",verb:"🟡"};
 function card2(w,k,col,p){const nm=(w.article?w.article+" ":"")+w.lemma,parts=String(w.syllables||w.lemma).split(/\s*[·‧-]\s*/).filter(Boolean),ss=Array.isArray(w.sounds)?w.sounds:[];
  const assoc=ss.length===parts.length?parts.map((x,i)=>`<div>${esc(x)} → ${qs(ss[i])}</div>`).join(""):esc(parts.join(" · "));
- const story=k==="verb"?`<span style="color:var(--gold)">${esc(MP.road(w.image||""))}</span>`:esc(MP.road(w.image||""));
- return `<div class="hero" style="padding:20px 18px"><div style="font-size:24px">${DOTS[k]||"⚪"} <b style="color:${col}">${esc(nm)}</b></div>
-<div style="margin-top:6px;font-size:18px">${esc(w.translation)} · ${sounds(w)||"—"}</div></div>
+ const story=k==="verb"&&!isOwn(w)?`<span style="color:var(--gold)">${esc(MP.road(w.image||""))}</span>`:esc(MP.road(w.image||""));
+ return `<div class="hero" style="padding:20px 18px"><div style="font-size:24px">${isOwn(w)?"🎒":DOTS[k]||"⚪"} <b style="color:${col}">${esc(nm)}</b></div>
+<div style="margin-top:6px;font-size:18px">${esc(trOf(w))} · ${sounds(w)||"—"}</div></div>
 <div class="card" style="margin-top:12px"><h3>🔤 Части и ассоциации</h3><div style="font-size:17px;line-height:1.6">${assoc}</div></div>
-<div class="card"><h3 style="display:flex;justify-content:space-between">📍 ${esc(artLbl(k))}${p.t?" — "+esc(p.t):""}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️</span>`:""}</h3></div>
+<div class="card"><h3 style="display:flex;justify-content:space-between">📍 ${esc(isOwn(w)?zname(k):artLbl(k))}${p.t?" — "+esc(p.t):""}${zid(k)?`<span class="chip" onclick="go('ce_z_${zid(k)}')">✏️</span>`:""}</h3></div>
 <div class="card story"><h3>🎬 История</h3><p>${story||"История ещё не придумана."}</p></div>`}
 
 // ---------- r25 (NordSturm 17.10): «Главы» деревом — 8 разделов → подглава (тема без уровня, бейджи A1/A2/B1) →
@@ -287,7 +289,7 @@ ${s.subs.map((x,i)=>{const k=x.eps.length,pct=x.n?Math.min(100,Math.round(100*x.
  return `<div class="sub2 ${k?"":"idle"}" style="--c:${s.c}" onclick="tPick(${i})"><div class="no">${x.e}</div><div class="t"><b>${esc(x.t)}</b><small>${k?`${parts_(k)} · ${words_(x.words)}${x.due?" · 🔁 "+x.due+" повторить":""}`:`ещё не начато${x.n?" · "+words_(x.n)+" в теме":""}`}</small>${x.lv.map(l=>`<span class="lv">${l}</span>`).join("")}<div class="bar2"><i style="width:${pct}%"></i></div></div><div class="chev">›</div></div>`}).join("")||`<div class="empty">Здесь пока нет глав.</div>`}`}
 function partCard(e,i,cur,sub){const open=tOpen===e.id||(tOpen===null&&cur),dn=e.words.filter(isDue).length,nm=partName(e,sub);
  return `<div class="part ${cur?"cur":""}"><div class="h" onclick="tP('${e.id}')"><div><b>Часть ${i}${nm?" · "+esc(nm):""}</b><small style="display:block">${words_(e.words.length)}${dn?" · 🔁 "+dn+" повторить":""}</small></div><span class="st2 ${cur?"r":""}">${cur?"▶️ читаешь":"✅ прочитано"}</span></div>
-${open?`<div class="wds">${e.words.map(w=>`<div class="wd" onclick="openWord('${w.user_word_id}')"><span class="art ${w.pos==="verb"?"verb":(w.article||"")}">${w.pos==="verb"?"verb":esc(w.article||"")}</span><div class="t"><b class="${w.pos==="verb"?"gold":""}">${esc(w.syllables||w.lemma)}</b><small>${esc(w.translation)}${sounds(w)?" · "+sounds(w):""}</small></div></div>`).join("")}
+${open?`<div class="wds">${e.words.map(w=>`<div class="wd" onclick="openWord('${w.user_word_id}')">${isOwn(w)?`<span class="art own">своё</span>`:`<span class="art ${w.pos==="verb"?"verb":(w.article||"")}">${w.pos==="verb"?"verb":esc(w.article||"")}</span>`}<div class="t"><b class="${w.pos==="verb"&&!isOwn(w)?"gold":""}">${esc(w.syllables||w.lemma)}</b><small>${esc(trOf(w))}${sounds(w)?" · "+sounds(w):""}</small></div></div>`).join("")}
 ${cur?`<button class="btn" onclick="go('next')">▶️ Читать дальше</button>`:""}<a class="link" onclick="openEp('${e.id}')">📖 Открыть текст части</a></div>`:""}</div>`}
 function vSub(s,x){const ps=x.eps,last=ps.length-1,B=TR.block||3,nb=Math.ceil(ps.length/B),cb=Math.floor(Math.max(0,last)/B);
  const head=`${bk()}<div class="crumb">Главы › ${esc(s.n)} ›</div><div class="ttl">${x.e} ${esc(x.t)}</div><div class="sub">${ps.length?parts_(ps.length)+" · "+words_(x.words)+` · 📖 читаешь часть ${ps.length}`:"ещё не начато"+(x.n?" · "+words_(x.n)+" в теме":"")}${x.lv.length?" · "+x.lv.join(" "):""}</div>`;
@@ -369,9 +371,10 @@ const subChs=t=>window.MCBook?window.MCBook.chapters.filter(c=>c.s===t):[];
 // the lemma rule of the bot / edge (core/chapters.word_key, edge cleanLemma + wkey): one word = article|lemma
 const cLem=l=>{let t=String(l||"").replace(/^\s*(?:\d+[.)]?|[•\-–*])\s+(?=\D)/,"").trim();const m=t.match(/^[А-Яа-яЁё\s,]+\s+([A-Za-zÄÖÜäöüß].*)$/);return m?m[1].trim():t};
 const wkeyOf=(a,l)=>String(a||"").toLowerCase()+"|"+cLem(l).toLowerCase();
-let KN=null,KNP=null,BCMSG="";
-function loadKnown(force){if(KN&&!force)return Promise.resolve(KN);
- if(!KNP)KNP=api({op:"known"}).then(r=>KN=r&&Array.isArray(r.ids)?{ok:true,ids:new Set(r.ids),keys:new Set(r.keys||[])}:{ok:false,ids:new Set(),keys:new Set()})
+let KN=null,KNP=null,BCMSG="",CHP=null;   // CHP {c,p}: parts of chapter c written so far (PM hq #304, #426: go_<cid>_<p>)
+function loadKnown(force,cid){if(KN&&!force)return Promise.resolve(KN);
+ if(!KNP)KNP=api(cid?{op:"known",chapter_id:cid}:{op:"known"}).then(r=>{if(cid)CHP=r&&r.chapter_id===cid&&Number.isInteger(r.p)?{c:cid,p:r.p}:null;
+  return KN=r&&Array.isArray(r.ids)?{ok:true,ids:new Set(r.ids),keys:new Set(r.keys||[])}:{ok:false,ids:new Set(),keys:new Set()}})
   .catch(()=>KN={ok:false,ids:new Set(),keys:new Set()}).then(k=>{KNP=null;return k});return KNP}
 // QA #207 / core/chapters.word_state: «done» (in a story: id or lemma) → «known» (☑ знаю, the lemma rule) → «fresh»
 let WS0=null;const placedOf=()=>{if(!WS0||WS0.d!==D.words)WS0={d:D.words,ids:new Set(D.words.map(x=>x.word_id)),lem:new Set(D.words.map(x=>cLem(x.lemma).toLowerCase()))};return WS0};
@@ -391,7 +394,7 @@ async function openCur(){const n=D.next||{};await loadBook();const c=n.cid?bookC
 // a topic → its chapter to start: the learner's level first, then any with fresh words (= TreeUX.current_chapter)
 async function openSubCh(){const t=tSub;const bk=await loadBook();if(!bk){BOOKERR=true;return render()}const cs=subChs(t);if(!cs.length)return ACT_ON()?act("🎒 Свои главы","topic"):chat("topics","topic");
  await loadKnown();const open=cs.filter(c=>chProg(c).fresh>0);openCh((open.find(c=>c.lv===D.level)||open[0]||cs[0]).id)}
-function openCh(id){to("chap",()=>{BCID=id;BCMSG=""});loadKnown(true).then(()=>{if(tab==="chap")render()})}
+function openCh(id){to("chap",()=>{BCID=id;BCMSG="";CHP=null});loadKnown(true,id).then(()=>{if(tab==="chap")render()})}
 function lvRow(t){const cs=subChs(t);if(!window.MCBook){if(BOOKERR)return bookErr();loadBook().then(b=>{if((b||BOOKERR)&&tab==="eps"&&tSub===t)render()});return ""}   // #367: never re-render on a null without the error flag
  if(!cs.length)return "";const ks=cs.map(c=>c.lv+"|"+c.p),many=new Set(ks).size<ks.length;
  return `<div class="grp">Слова главы</div><div class="seg lvrow">${cs.map(c=>`<span class="chip" onclick="openCh('${c.id}')">${esc(c.lv)}${c.ps>1?" ч."+c.p:""}${many&&c.ft!==t?" · "+esc(c.ft):""} · слова</span>`).join("")}</div>`}
@@ -407,7 +410,7 @@ ${!KN?`<div class="sub" style="margin:0 4px 8px">Загружаю твои от�
 <div class="card" style="padding:0 16px">${c.w.map(w=>chRow(w,wst(w))).join("")}</div>
 <div class="sub" style="margin:6px 4px 0">${pr.known?`Знаю: ${pr.known} · учим: ${pr.fresh}`:"Пока всё учим"}</div>
 ${BCMSG?`<div class="toast">${esc(BCMSG)}</div>`:""}
-${pr.fresh?`<a class="main stick" id="chgo" onclick="go('go_${c.id}')">▶️ ${started?"Читать дальше":"Начать главу"}</a>`:`<div class="empty">✅ Все слова этой главы уже в историях или отмечены «знаю»</div>`}`};
+${pr.fresh?`<a class="main stick" id="chgo" onclick="go('go_${c.id}${CHP&&CHP.c===c.id?"_"+CHP.p:""}')">▶️ ${started?"Читать дальше":"Начать главу"}</a>`:`<div class="empty">✅ Все слова этой главы уже в историях или отмечены «знаю»</div>`}`};
 async function chT(id){const c=bookCh(BCID),w=c&&c.w.find(x=>x[0]===id);if(!w||!KN||wst(w)==="done")return;
  const k=wkeyOf(w[1],w[2]),on=wst(w)!=="known",set=v=>{if(v){KN.ids.add(id);KN.keys.add(k)}else{KN.ids.delete(id);KN.keys.delete(k)}};
  set(on);render();try{tg&&tg.HapticFeedback&&tg.HapticFeedback.impactOccurred("light")}catch(e){}

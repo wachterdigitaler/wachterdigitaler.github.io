@@ -12,7 +12,9 @@ const OK={B:"b",STRONG:"b",I:"i",EM:"i",U:"u",INS:"u",S:"s",STRIKE:"s",DEL:"s",C
 function clean(html){const t=document.createElement("template");t.innerHTML=String(html||"");const out=document.createElement("div");
  const walk=(n,to)=>{for(const c of [...n.childNodes]){if(c.nodeType===3){to.appendChild(document.createTextNode(c.nodeValue));continue}
   if(c.nodeType!==1)continue;const k=OK[c.tagName];if(k){const e=document.createElement(k);to.appendChild(e);walk(c,e)}else walk(c,to)}};
- walk(t.content,out);return out.innerHTML}
+ walk(t.content,out);return mc(out.innerHTML)}
+// hq #444/#457 (NordSturm 20.10): the coin «Ⓜ» in the bot's texts / buttons is the same turquoise as in the app (text nodes only)
+function mc(h){return String(h).replace(/Ⓜ\uFE0F?/g,'<span class="cn">Ⓜ</span>')}
 window.actClean=clean;
 function S(){return HV&&HV.a&&ACTS[HV.a]}
 // open (or come back to) an in-app bot screen for a /start payload of the chat
@@ -129,7 +131,7 @@ window.actPlay=async function(mid){const s=S(),m=s&&find(s,mid);if(!m||!m.blob)r
   else{const a=document.createElement("a");a.href=m.url;a.download=m.name||"file";document.body.appendChild(a);a.click();a.remove()}}catch(e){toast("Не получилось открыть файл")}};
 // #365: the bot's own «⬅️ Назад» (bk / mn:back) is not drawn — this screen's «⬅️ Назад» is the one way back (no duplicates)
 const BACKS=["bk","mn:back"];
-const btns=m=>{const rows=(m.b||[]).map((row,ri)=>row.map((b,bi)=>BACKS.includes(b.d)?"":`<a onclick="actTap(${m.id},${ri},${bi})">${esc(b.t)}</a>`).join("")).filter(x=>x);
+const btns=m=>{const rows=(m.b||[]).map((row,ri)=>row.map((b,bi)=>BACKS.includes(b.d)?"":`<a onclick="actTap(${m.id},${ri},${bi})">${mc(esc(b.t))}</a>`).join("")).filter(x=>x);
  return rows.length?`<div class="abtn${m.wait?" wait":""}">${rows.map(r=>`<div class="arow">${r}</div>`).join("")}</div>`:""};
 const msg=m=>isMenu(m)?`<div class="card amsg amenu"><a class="link" onclick="nav('home')">🏠 На главную</a></div>`:m.mine?`<div class="amine">${m.html}</div>`:m.kind?`<div class="card amsg"><a class="aplay" onclick="actPlay(${m.id})">${m.kind==="voice"?"▶️ Слушать":"📄 "+esc(m.name||"Файл")}</a>${m.html?`<div class="atxt">${clean(m.html)}</div>`:""}</div>`
  :`<div class="card amsg" id="am${m.id}"><div class="atxt">${clean(m.html)}</div>${btns(m)}</div>`;
