@@ -24,9 +24,9 @@ function hist(h){const n=(F().daily_n||5);return (h||[]).filter(x=>x.delta).map(
 const CV=window.CV={
  is:t=>CVIEWS.includes(t),
  navOf:t=>t==="gEvent"?"city":"more",
- open(v){if(!C())return;if(CV.is(tab))CST.push(tab);else{CORG=tab;CST=[]}tab=v;render();scrollTo(0,0)},
+ open(v){if(!C())return;if(CV.is(tab))CST.push(tab);else{CORG=tab;CST=[];window.navPush&&navPush()}tab=v;render();scrollTo(0,0)},   // miniapp-inapp-nav: the screen it came from is on the app's back stack
  rep(v){tab=v;render();scrollTo(0,0)},     // a finishing step replaces the current one (never a «Назад» target)
- back(){if(tab==="gEvent")CV._ev=null;const p=CST.pop();if(p){tab=p;render();scrollTo(0,0)}else nav(CORG||"home")},
+ back(){if(tab==="gEvent"){CV._ev=null;tab="city";render();scrollTo(0,0);return}const p=CST.pop();if(p){tab=p;render();scrollTo(0,0)}else if(window.navPop)navPop();else nav(CORG||"home")},
  async op(b){let r={};try{r=await api(b)}catch(e){r={error:"server"}}if(r&&r.coins)D.coins=r.coins;return r||{}},
 };
 // ---------- M0 chip + M5 line (streak tile kept, RC 18.10) ----------
@@ -119,13 +119,13 @@ V.city=function(){let h=_city();if(!C()||!F().growth||D.reset)return h;const g=C
  const ED=/<div class="card" onclick="go\('city'\)"><div class="w"><div class="t"><b>✏️ Добавить или поправить детали<\/b>[\s\S]*?›<\/div><\/div>/,em=h.match(ED),edit=em?em[0]:"";if(edit)h=h.replace(ED,"");
  return h.replace(/(<div class="top">[\s\S]*?<\/div>\s*<\/div>|<div class="top">[\s\S]*?<\/div>)/,"$1"+card+edit)};
 const _nav=window.nav;
-window.nav=function(t){if(t==="city"&&C()&&F().growth&&!D.reset){const g=C().growth||{};if((g.stage||0)>(g.stage_seen||0)&&!CV._ev){CV._ev={from:g.stage_seen||0,to:g.stage};CORG="city";CST=[];g.stage_seen=g.stage;CV.op({op:"growth_seen"});tab="gEvent";render();scrollTo(0,0);try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred("success")}catch(e){}return}}return _nav(t)};
+window.nav=function(t,o){if(t==="city"&&C()&&F().growth&&!D.reset){const g=C().growth||{};if((g.stage||0)>(g.stage_seen||0)&&!CV._ev){if(!(o&&o.replace)&&tab!=="city"&&window.navPush)navPush();CV._ev={from:g.stage_seen||0,to:g.stage};CORG="city";CST=[];g.stage_seen=g.stage;CV.op({op:"growth_seen"});tab="gEvent";render();scrollTo(0,0);try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred("success")}catch(e){}return}}return _nav(t,o)};
 V.gEvent=function(){const e=CV._ev||{from:0,to:0},to=e.to,np=MAPA.newPlace(to,D.growth_map||{}),st=F().stages||[10,40,120,400,900,2750];
  const skip=to-e.from>1?`<p class="mut">Пока тебя не было, выросли ${GR.name.slice(e.from+1,to).join(" и ")}.</p>`:"";
  const q=(C().growth||{}).quote;
  return `${bk}<div class="gev" data-growth-slot="event" data-concept="${esc(F().concept||"AB")}"><small>Глава ${to}</small><div class="ttl">${esc(GR.icon[to]+" "+GR.name[to])}</div>${MAPA.svg(to,D.growth_map||{},np&&np[1])}
 <p>${st[to-1]||0} слов осели — ${np?`в районе «${esc(np[0])}» появилось новое место: «${esc(np[1])}».`:"туман над окраиной рассеялся."}</p>${skip}${q?`<p class="quote">«${esc(q)}»</p>`:""}</div>
-<button class="btn" id="evnext" onclick="CV._ev=null;nav('city')">Дальше</button>`};
+<button class="btn" id="evnext" onclick="CV._ev=null;nav('city',{replace:true})">Дальше</button>`};
 CV.evBack=()=>{CV._ev=null;nav("city")};
 // ---------- карта A (правила README «Правила раскладки», PM #187 P2-2) ----------
 const GC={der:"#2d6cff",die:"#ff5d8a",das:"#22c58b",verb:"#f5c542"},TL={der:"#27407a",die:"#6a2e4f",das:"#1e6b4f",verb:"#5a4a1a"};

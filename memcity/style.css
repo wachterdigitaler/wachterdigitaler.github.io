@@ -133,3 +133,15 @@ details.map[open] summary{margin-bottom:6px}
 .gev{text-align:center}.gev .mapa{margin:10px 0}.quote{font-style:italic;color:#cfcfda}
 .row2{align-items:stretch}.row2 .btn{margin-left:0;margin-right:0;display:flex;align-items:center;justify-content:center}
 .gst .gdesc{margin:4px 0 6px;color:#cfcfda;font-size:14px;line-height:1.35}.gst .gedit{display:block;margin-top:10px;text-align:center}
+/* inapp-actions: the bot's screens inside the app — the same dark cards, the bot's buttons as the app's chips */
+.alist{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.amsg{margin:0}.amsg .atxt{white-space:pre-wrap;line-height:1.45;word-wrap:break-word}
+.amsg blockquote{margin:6px 0;padding-left:10px;border-left:3px solid var(--line,#333);color:var(--mut,#aaa)}
+.abtn{margin-top:10px;display:flex;flex-direction:column;gap:6px}.abtn.wait{opacity:.5;pointer-events:none}
+.arow{display:flex;gap:6px}.arow a{flex:1;text-align:center;padding:10px 8px;border-radius:12px;background:rgba(255,255,255,.07);font-size:14px;cursor:pointer}
+.amine{align-self:flex-end;max-width:80%;padding:10px 14px;border-radius:16px 16px 4px 16px;background:var(--acc);color:#fff;white-space:pre-wrap}
+.aplay{display:inline-block;padding:8px 14px;border-radius:12px;background:rgba(255,255,255,.08);cursor:pointer}
+.await{margin:12px 4px;color:var(--mut,#aaa);font-size:14px}.awarn{margin-top:12px}
+.ain{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));display:flex;gap:8px;margin-top:14px;padding:8px;border-radius:16px;background:var(--card2)}
+.ain textarea{flex:1;resize:none;border:0;outline:0;background:transparent;color:inherit;font:inherit;padding:6px}
+.ain a{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;box-sizing:border-box;padding:6px 12px;font-size:18px;cursor:pointer;border-radius:12px}   /* Tester #383: ➤ ≥ 44 px */.ain.on{box-shadow:0 0 0 2px var(--acc)}
