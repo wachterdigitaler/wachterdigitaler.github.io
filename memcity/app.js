@@ -1,6 +1,6 @@
 const API="https://wbrpcvbpipeejdnsymdz.supabase.co/functions/v1/memcity-app", BOT="fixDeutsch_bot";
 // APP_VERSION — single source for cache-bust ?v= and the label; tools/bump_version.sh updates these + index.html
-const APP_VERSION="3.6.0", APP_BUILT="19.10 03:16";
+const APP_VERSION="3.6.1", APP_BUILT="20.10 04:26";
 const verLabel=()=>`<div class="ver">Версия ${esc(APP_VERSION)}</div>`;
 const tg=window.Telegram&&Telegram.WebApp; if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#0b0b0f");tg.setBackgroundColor("#0b0b0f")}catch(e){}}
 const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -48,11 +48,38 @@ const ptxt=w=>placeOf(w.place,w.place_label).t||zname(kindOf(w));
 const word=w=>`<div class="w" onclick="openWord('${w.user_word_id}')"><span class="art ${w.pos==="verb"?"verb":(w.article||"")}">${w.pos==="verb"?"verb":esc(w.article||"")}</span><div class="t"><b>${esc(w.syllables||w.lemma)}</b><small><span class="tr">${esc(w.translation)}</span>${sounds(w)?" · "+sounds(w):""}${" · 📍 "+esc(ptxt(w))}</small></div>${stl(w)}</div>`;
 function tt(t){return String(t||"").replace(/^\s*\u0421\u0435\u0440\u0438\u044f\s+(\d+):\s*(.+)$/i,"«$2» · часть $1")}
 function nounGold(s,ws){/* r22d #178: 🟡 = verbs only */const nn=new Set((ws||[]).filter(w=>w.article).map(w=>String(w.lemma||"").toLowerCase()));return String(s||"").replace(/🟡\s?(\*\*([^*]+)\*\*|[^\s.,!?;:]+)/g,(m,t,b)=>{const k=(b||t).replace(/^(der|die|das|den|dem|des)\s+/i,"").toLowerCase();return nn.has(k)?t:m})}
-function md(s,ws){s=MP.noPlan(s);s=MP.road(s);if(MP.keyLegend)s=MP.keyLegend(s,znames()).replace(/^(Места: .*)$/mu,m=>m.replace(/🟡/gu,"\uE000"));return boldAssoc(esc(nounGold(s,ws)),ws).replace(/🟡\s?\*\*(.+?)\*\*/g,"<b class=\"v\">$1</b>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/🟡\s?([^\s.,!?;:]+)/g,"<b class=\"v\">$1</b>").split(/\n{2,}/).map(p=>"<p>"+p.replace(/\n/g,"<br>")+"</p>").join("").replace(/\uE000/g,"🟡")}
+function md(s,ws){s=MP.noPlan(s);s=MP.road(s);s=syncKey(s,ws);if(MP.keyLegend)s=MP.keyLegend(s,znames()).replace(/^(Места: .*)$/mu,m=>m.replace(/🟡/gu,"\uE000"));return boldAssoc(esc(nounGold(s,ws)),ws).replace(/🟡\s?\*\*(.+?)\*\*/g,"<b class=\"v\">$1</b>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/🟡\s?([^\s.,!?;:]+)/g,"<b class=\"v\">$1</b>").split(/\n{2,}/).map(p=>"<p>"+p.replace(/\n/g,"<br>")+"</p>").join("").replace(/\uE000/g,"🟡")}
 // r23: sound-alikes («баня», «хохот») bold inside the chapter text — any Russian ending (stem match).
-function boldAssoc(h,ws){const st=new Set();(ws||[]).forEach(w=>sparts(w.sounds).forEach(x=>x.split(/\s+/).forEach(t=>{t=t.toLowerCase().replace(/[^а-яё]/g,"");if(t.length>=3)st.add(t.length>=4?t.slice(0,t.length-1):t)})));
- if(!st.size)return h;const rx=new RegExp("(^|[^А-Яа-яЁё>])(("+[...st].sort((a,b)=>b.length-a.length).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")+")[а-яё]{0,3})(?![А-Яа-яЁё])","gi");
- return h.split(/(<[^>]+>)/).map(p=>p.startsWith("<")?p:p.replace(rx,"$1<b>$2</b>")).join("")}
+// fix-assoc-sync (NordSturm 19.10): ONE source — the 🔑 line shows the word's card sound-alikes; in a paragraph only the
+// associations of ITS word are bold (never «тесто» of die Toilette in the kitchen); real word forms only (лето ≠ летели) —
+// the same rules as the bot (core/assoc_check.py, core/assoc_bold.py)
+const A_NOM="а я о е ы и у ю ь й ой ей ий ый ая яя ое ее ые ие ом ем ам ям ах ях ами ями ов ев ую юю ого его ому ему ым им ых их ою ею".split(" ").sort((a,b)=>b.length-a.length);
+const A_VERB="ть ти чь ться тся ешь ет ем ете ут ют ит ат ят ишь им ите у ю юсь усь ется ится ал ала али ало ла ли ло л ял яла яли яло ел ела ели ело ил ила или ило ась ось ись ся сь й йте и ите ая ую ющий ящий вший".split(" ").sort((a,b)=>b.length-a.length);
+const A_STOP=new Set("это быть был была было были есть весь все всё так там тут вот уже ещё еще очень один одна одно свой своя мой моя наш его её они она оно что как кто где когда делать сделать мочь иметь человек время место вещь часть новый большой маленький хороший день раз год дело идти стать сказать который".split(" "));
+const aNorm=t=>String(t||"").toLowerCase().replace(/ё/g,"е");
+const aVerb=t=>/(ть|ти|чь)(ся|сь)?$/.test(aNorm(t));
+function aStem(t){const w=aNorm(t),keep=w.length<=4?2:3;for(const e of(aVerb(w)?A_VERB:A_NOM))if(w.endsWith(e)&&w.length-e.length>=keep)return w.slice(0,-e.length);return w}
+const aEsc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+function aTermRx(t){const st=aEsc(aStem(t)).replace(/е/g,"[её]");return st+(aVerb(t)?"(?:"+A_VERB.map(aEsc).join("|")+")?":"(?:(?:н|ск)?(?:"+A_NOM.map(aEsc).join("|")+"))?")}
+function aTerms(w){const out=[];sparts(w&&w.sounds).forEach(x=>(String(x).match(/[А-Яа-яЁё]{3,}/g)||[]).forEach(t=>{const k=aNorm(t);if(!A_STOP.has(k)&&!out.includes(k))out.push(k)}));return out}
+function aBold(p,terms){if(!terms.length)return p;const rx=new RegExp("(^|[^А-Яа-яЁёA-Za-z>*])("+terms.map(aTermRx).sort((a,b)=>b.length-a.length).join("|")+")(?![А-Яа-яЁёA-Za-z*])","gi");
+ return p.split(/(<[^>]+>|\*\*[^*\n]+\*\*|\([^()\n]*\))/).map(x=>/^(<|\*\*|\()/.test(x)?x:x.replace(rx,"$1<b>$2</b>")).join("")}
+const aWord=w=>((w&&w.article?w.article+" ":"")+String((w&&w.lemma)||"")).trim();
+function aOwns(par,w){const p=aNorm(par),wd=aNorm(aWord(w)),lem=aNorm(String((w&&w.lemma)||""));if(!lem)return 0;
+ if(p.includes("**"+wd+"**")||new RegExp("\\*\\*[^*]*(^|[^a-zäöüß])"+aEsc(lem)+"(?=[^a-zäöüß]|$)[^*]*\\*\\*").test(p))return 2;
+ return new RegExp("(^|[^a-zäöüß])"+aEsc(lem)+"(?=[^a-zäöüß]|$)").test(p)?1:0}
+function boldAssoc(h,ws){ws=(ws||[]).filter(w=>w&&w.lemma!=null||w&&w.sounds);if(!ws.length)return h;
+ const ch=String(h).split(/(\n\s*\n)/),paras=ch.filter((_,i)=>i%2===0);
+ const own=paras.map(()=>[]);
+ ws.forEach(w=>{const sc=paras.map(p=>aOwns(p,w)),best=Math.max(0,...sc);if(best)sc.forEach((v,i)=>{if(v===best)own[i].push(w)})});
+ const out=paras.map((p,i)=>{const lines=p.split("\n");
+  if(lines.some(l=>/\*\*[^*]+\*\* — .* · /.test(l)))return lines.map(l=>{const m=l.match(/\*\*([^*]+)\*\*/);const w=m&&ws.find(x=>aNorm(aWord(x))===aNorm(m[1].trim()));return w&&l.includes(" · ")?aBold(l,aTerms(w)):l}).join("\n");
+  const ts=[...new Set((own[i].length?own[i]:(ws.length===1?ws:[])).flatMap(aTerms))];return aBold(p,ts)});
+ return ch.map((c,i)=>i%2===0?out[i/2]:c).join("")}
+function syncKey(s,ws){/* fix-assoc-sync: the 🔑 line = the card (display only, the stored text is not touched) */
+ const by={};(ws||[]).forEach(w=>{const k=aNorm(aWord(w));const sn=Array.isArray(w.sounds)?w.sounds:(w.sounds?[w.sounds]:[]);if(k&&sn.length)by[k]=sn});
+ const i=String(s||"").indexOf("🔑");if(i<0)return s;
+ return s.slice(0,i)+s.slice(i).split("\n").map(l=>{const m=l.match(/\*\*([^*]+)\*\*/);if(!m||!l.includes(" · "))return l;const sn=by[aNorm(m[1].trim())];if(!sn)return l;const pt=l.split(" · ");if(pt.length<2||!pt[1].includes("«"))return l;pt[1]=sn.map(x=>"«"+x+"»").join(" + ");return pt.join(" · ")}).join("\n")}
 // PM-124 #194 / PM-128 #213: ONE place name for the learner = the bot's (payload place_names ← memory.place_names); the rule = placename.js
 // (generated from core/placename_rules.json); a technical zones.name (zona + article + letter) is never shown; a minimal stand-in if it failed to load
 const MP=window.MCPlace||{road:t=>String(t||"").replace(/[Дд]орога между (?:зонами|местами|районами)/g,"Дорога между местами").replace(/между (?:зонами|районами)/g,"между местами"),isTech:n=>/^\s*зона\s+(?:[a-dxа-гх]|der|die|das|verb|глагол[а-яё]*|действий)(?![а-яёa-z])/i.test(String(n||"")),clean:t=>String(t||"").replace(/^\s*зона\s+(?:[a-dxа-гх]|der|die|das|verb|глагол[а-яё]*)(?![а-яёa-z])(?:\s*\([^)]*\))?\s*[,:—-]\s*/i,"").replace(/между зонами/gi,"между местами").trim(),fallback:k=>({der:"Мой дом",die:"Моя улица",das:"Любимое место",verb:"Двор у дома"})[k]||"Двор у дома",ofZone:z=>z&&z.name&&!/^\s*зона(?![а-яё])/i.test(z.name)?z.name:(({der:"Мой дом",die:"Моя улица",das:"Любимое место",verb:"Двор у дома"})[z&&z.kind]||"Двор у дома"),noPlan:b=>String(b||"").replace(/\n\n🗺 План:[\s\S]*?(?=\n\n🔑 Ключ:|$)/u,"")};
