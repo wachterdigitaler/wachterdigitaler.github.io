@@ -110,17 +110,29 @@ CV.tok=async(kind,n,ok)=>{if(BUSY)return;if(!n||n<1)return toast("Впиши с�
  if(r.ok){TK.last=r.amount;CST=CST.filter(v=>v!=="tokenMore"&&v!=="tokenMore2");CV.rep(ok)}else toast("Не получилось — попробуй ещё раз")};
 // ---------- M6 Город: ступень + карта A; M7 событие роста (один раз) ----------
 const GR=window.GR={name:["Костёр","Стоянка","Деревня","Село","ПГТ","Город","Сити-центр"],icon:["🔥","⛺","🛖","🏡","🏘","🏙","🌆"],
- // RC 18.10 22:47 (NordSturm «Мой город»): what the settlement is now — mirrors core/growth.py DESC
- desc:["Костёр на пустом месте — город только начинается.","У стоянки собираются первые места: слова начали оседать.","Несколько домов и тропинки между районами.","Улицы и свои места в каждом открытом районе.","Посёлок: районы застроены, появляются новые уголки.","Все районы живут, места на каждой улице.","Город построен целиком — от окраин до центра."]};
-const _city=V.city;
+ // RC 18.10 22:47 (NordSturm «Мой город»): what the settlement is now — mirrors core/growth.py DESC (0/1: Designer hq #323)
+ desc:["Первый огонь на пустом месте — город только начинается.","Вокруг огня встала стоянка: слова начали оседать.","Несколько домов и тропинки между районами.","Улицы и свои места в каждом открытом районе.","Посёлок разросся: в каждом районе горят окна знакомых слов.","Город не спит: на каждой улице живут твои слова.","Огни до самого центра — твои слова построили город целиком."]};
+const _city=V.city;window.CITY0=_city;   // Тото (gami.js) строит «Город» поверх исходного экрана
 V.city=function(){let h=_city();if(!C()||!F().growth||D.reset)return h;const g=C().growth||{},s=g.stage||0,nx=g.next;
  const card=`<div class="card gcard" data-growth-slot="map" data-concept="${esc(F().concept||"AB")}" data-stage="${s}">${MAPA.svg(s,D.growth_map||{})}
 <div class="gst"><b>${GR.icon[s]} Ступень ${s} из 6 · ${esc(GR.name[s])}</b><p class="gdesc">${esc(GR.desc[s]||"")}</p>${nx?`<div class="bar"><i style="width:${Math.min(100,Math.round(100*(g.settled||0)/nx))}%"></i></div><small>Осело ${g.settled||0} / ${nx} · до «${esc(GR.name[s+1])}» ещё ${Math.max(0,nx-(g.settled||0))} · растёт только от осевших слов</small>`:`<small>Осело ${g.settled||0}</small>`}</div></div>`;   // RC 19.10 (NordSturm: no duplicates): no own edit button — the EXISTING «✏️ Добавить или поправить детали» card moves right under this card (growth ON only)
  const ED=/<div class="card" onclick="go\('city'\)"><div class="w"><div class="t"><b>✏️ Добавить или поправить детали<\/b>[\s\S]*?›<\/div><\/div>/,em=h.match(ED),edit=em?em[0]:"";if(edit)h=h.replace(ED,"");
  return h.replace(/(<div class="top">[\s\S]*?<\/div>\s*<\/div>|<div class="top">[\s\S]*?<\/div>)/,"$1"+card+edit)};
 const _nav=window.nav;
-window.nav=function(t,o){if(t==="city"&&C()&&F().growth&&!D.reset){const g=C().growth||{};if((g.stage||0)>(g.stage_seen||0)&&!CV._ev){if(!(o&&o.replace)&&tab!=="city"&&window.navPush)navPush();CV._ev={from:g.stage_seen||0,to:g.stage};CORG="city";CST=[];g.stage_seen=g.stage;CV.op({op:"growth_seen"});tab="gEvent";render();scrollTo(0,0);try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred("success")}catch(e){}return}}return _nav(t,o)};
-V.gEvent=function(){const e=CV._ev||{from:0,to:0},to=e.to,np=MAPA.newPlace(to,D.growth_map||{}),st=F().stages||[10,40,120,400,900,2750];
+window.nav=function(t,o){if(t==="city"&&C()&&F().growth&&!D.reset){const g=C().growth||{};let gv=0;try{gv=+localStorage.getItem("tt_gev")||0}catch(e){}   // #471: праздник роста — один раз на ступень, даже если growth_seen не дошёл;
+ const gok=r=>{if(r&&r.ok)try{localStorage.removeItem("tt_gev")}catch(e){}};                // пометка живёт, пока сервер не подтвердил (потом — сброс прогресса не глушит)
+ if((g.stage||0)>(g.stage_seen||0)&&!CV._ev&&(g.stage||0)<=gv){g.stage_seen=g.stage;CV.op({op:"growth_seen"}).then(gok)}
+ if((g.stage||0)>(g.stage_seen||0)&&!CV._ev){try{localStorage.setItem("tt_gev",String(g.stage))}catch(e){}if(!(o&&o.replace)&&tab!=="city"&&window.navPush)navPush();CV._ev={from:g.stage_seen||0,to:g.stage};CORG="city";CST=[];g.stage_seen=g.stage;CV.op({op:"growth_seen"}).then(gok);tab="gEvent";render();scrollTo(0,0);try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred("success")}catch(e){}return}}return _nav(t,o)};
+// Тото (#323-S, PM #298 (2)): при включённом Тото — «⛺ Ступень 1 · Стоянка» и «… зажглись первые огни. Тото уже ждёт тебя там.» /
+// «… туман над районом «X» рассеялся.»; без «Главы» и «нового места». Названия — из GR (= core/growth.py).
+const OPENK={1:"der",2:"die",3:"das",4:"verb"};
+V.gEventToto=function(){const e=CV._ev||{from:0,to:0},to=e.to,st=F().stages||[10,40,120,400,900,2750],G=D.growth_map||{},k=OPENK[to],dn=k&&G[k]&&G[k].name||"";
+ const skip=to-e.from>1?`<p class="mut">Пока тебя не было, выросли ${GR.name.slice(e.from+1,to).join(" и ")}.</p>`:"",q=(C().growth||{}).quote,n=st[to-1]||0;
+ const tail=to===1&&dn?`в районе «${esc(dn)}» зажглись первые огни. Тото уже ждёт тебя там.`:dn?`туман над районом «${esc(dn)}» рассеялся.`:"туман над окраиной рассеялся.";
+ return `${bk}<div class="gev" data-growth-slot="event" data-concept="${esc(F().concept||"AB")}"><div class="ttl">${esc(GR.icon[to]+" Ступень "+to+" · "+GR.name[to])}</div>${MAPA.svg(to,D.growth_map||{})}
+<p>${n} ${plr(n,"слово осело","слова осели","слов осели")} — ${tail}</p>${skip}${q?`<p class="quote">«${esc(q)}»</p>`:""}</div>
+<button class="btn" id="evnext" onclick="CV._ev=null;nav('city',{replace:true})">Дальше</button>`};
+V.gEvent=function(){if(D.gami&&D.gami.set)return V.gEventToto();const e=CV._ev||{from:0,to:0},to=e.to,np=MAPA.newPlace(to,D.growth_map||{}),st=F().stages||[10,40,120,400,900,2750];
  const skip=to-e.from>1?`<p class="mut">Пока тебя не было, выросли ${GR.name.slice(e.from+1,to).join(" и ")}.</p>`:"";
  const q=(C().growth||{}).quote;
  return `${bk}<div class="gev" data-growth-slot="event" data-concept="${esc(F().concept||"AB")}"><div class="ttl">${esc(GR.icon[to]+" Ступень "+to+" · "+GR.name[to])}</div>${MAPA.svg(to,D.growth_map||{},np&&np[1])}
@@ -134,16 +146,19 @@ const iso=(x,y,z)=>[OX+(x-y)*TW/2,OY+(x+y)*TH/2-(z||0)];
 const qof=(x,y)=>x===3||y===4?"street":x<3&&y<4?"der":x>3&&y<4?"die":x<3?"das":"verb";
 const slots=q=>{const t=[];for(let x=0;x<N;x++)for(let y=0;y<N;y++)if(qof(x,y)===q&&!(q==="verb"&&x===7&&y===5))t.push([x,y]);
  t.sort((a,b)=>Math.min(Math.abs(a[0]-3),Math.abs(a[1]-4))-Math.min(Math.abs(b[0]-3),Math.abs(b[1]-4))||(Math.abs(a[0]-3)+Math.abs(a[1]-4))-(Math.abs(b[0]-3)+Math.abs(b[1]-4)));return t.slice(0,8)};
-const trim=s=>s.length<=14?s:s.slice(0,13).trimEnd()+"…";
+// PM #298 P3: своё место ученика читается целиком — перенос на 2 строки по словам (≤ 16 знаков в строке), «…» только дальше
+const wrap2=s=>{s=String(s||"").trim();if(s.length<=16)return [s];const w=s.split(/\s+/);let a="",i=0;
+ while(i<w.length&&(a+(a?" ":"")+w[i]).length<=16)a+=(a?" ":"")+w[i++];if(!a){a=s.slice(0,16);w.splice(0,w.length,s.slice(16))}else w.splice(0,i);
+ let b=w.join(" ");if(b.length>16)b=b.slice(0,15).trimEnd()+"…";return b?[a,b]:[a]};
 const P=(pts,f,x)=>`<polygon points="${pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ")}" fill="${f}" ${x||""}/>`;
 function vis(stage,G){const r={};for(const k of ["der","die","das","verb"]){const z=G[k]||{},ps=(z.places||[]).filter((p,i,a)=>p&&a.indexOf(p)===i);
  if(stage<OPEN[k]||!ps.length){r[k]={open:false,soon:stage>=OPEN[k]&&!ps.length,show:[],more:0,name:z.name||""};continue}
  const cap=CAP[Math.min(stage,6)];r[k]=ps.length>8&&cap>=8?{open:true,show:ps.slice(0,7),more:ps.length-7,name:z.name||""}:{open:true,show:ps.slice(0,Math.min(ps.length,cap)),more:0,name:z.name||""}}return r}
 const MAPA=window.MAPA={
  newPlace(stage,G){if(stage<1)return null;const a=vis(stage-1,G),b=vis(stage,G);for(const k of Object.keys(b).sort((x,y)=>(OPEN[y]===stage)-(OPEN[x]===stage)))for(const p of b[k].show)if(!a[k].show.includes(p))return [b[k].name,p];return null},
- svg(stage,G,hi){const V2=vis(stage,G);let s=`<svg viewBox="0 0 512 512" class="mapa" role="img" aria-label="Карта города"><defs><radialGradient id="fog"><stop offset="0" stop-color="#b9aef0" stop-opacity=".85"/><stop offset="1" stop-color="#8f80d9" stop-opacity="0"/></radialGradient></defs><rect width="512" height="512" rx="40" fill="#1d1648"/><circle cx="440" cy="60" r="18" fill="#f5e7b8" opacity=".9"/>`;
+ svg(stage,G,hi){const V2=vis(stage,G);let s=`<svg viewBox="0 0 512 512" class="mapa" role="img" aria-label="Карта города"><defs><radialGradient id="fog"><stop offset="0" stop-color="#b9aef0" stop-opacity=".85"/><stop offset="1" stop-color="#8f80d9" stop-opacity="0"/></radialGradient></defs><rect width="512" height="512" rx="40" fill="#1d1648"/>`;
   for(let x=0;x<N;x++)for(let y=0;y<N;y++){const q=qof(x,y);s+=P([iso(x,y),iso(x+1,y),iso(x+1,y+1),iso(x,y+1)],q==="street"?(stage>=4?"#c9a227":"#7a6a3a"):TL[q],'stroke="#00000022"')}
-  const labels=[],taken=[[0,0,300,112],[410,30,470,92]],dots=[];
+  const labels=[],taken=[[0,0,300,112]],dots=[];
   const fits=b=>!taken.some(t=>!(b[2]+3<t[0]||t[2]+3<b[0]||b[3]+3<t[1]||t[3]+3<b[1]));
   for(const k of ["der","die","das","verb"]){const v=V2[k],sl=slots(k);
    v.show.forEach((p,i)=>{const [x,y]=sl[i],h=26+((i*7)%3)*10,A=iso(x+.15,y+.15),B=iso(x+.85,y+.15),Cc=iso(x+.85,y+.85),Dd=iso(x+.15,y+.85);
@@ -152,9 +167,9 @@ const MAPA=window.MAPA={
    if(v.more){const [x,y]=sl[7];const c=iso(x+.5,y+.5);labels.push({k,p:"ещё "+v.more,cx:c[0],by:c[1]-8,pri:-1})}
    if(!v.open){const c=iso(...(k==="der"?[1.5,2]:k==="die"?[5.5,2]:k==="das"?[1.5,6]:[5.5,6]));s+=`<ellipse cx="${c[0]}" cy="${c[1]}" rx="120" ry="70" fill="url(#fog)"/>`;if(v.soon)labels.push({k,p:"скоро здесь",cx:c[0],by:c[1],pri:-1})}}
   labels.sort((a,b)=>a.pri-b.pri);let n=0;
-  for(const L of labels){const t=trim(L.p),w=t.length*9+14,h=26,x=Math.max(6,Math.min(506-w,L.cx-w/2)),b=[x,L.by-h,x+w,L.by];
+  for(const L of labels){const ln=wrap2(L.p),w=Math.max(...ln.map(t=>t.length))*9+14,h=ln.length>1?44:26,x=Math.max(6,Math.min(506-w,L.cx-w/2)),b=[x,L.by-h,x+w,L.by];
    if((L.pri>=0&&n>=6)||!fits(b)){const dy=L.by-4;if(!taken.some(t=>L.cx>t[0]-8&&L.cx<t[2]+8&&dy>t[1]-8&&dy<t[3]+8))dots.push(`<circle cx="${L.cx.toFixed(1)}" cy="${(L.by-4).toFixed(1)}" r="5" fill="${GC[L.k]}" stroke="#fff"/>`);continue}
    taken.push(b);if(L.pri>=0)n++;
-   s+=`<g><rect x="${x.toFixed(1)}" y="${b[1].toFixed(1)}" width="${w}" height="${h}" rx="6" fill="${GC[L.k]}" stroke="${L.p===hi?"#fff":"#00000066"}" ${L.p===hi?'stroke-width="2.5"':""}/><text x="${(x+w/2).toFixed(1)}" y="${(b[1]+h-8).toFixed(1)}" font-size="16" font-weight="700" fill="${L.k==="verb"?"#1a1300":"#fff"}" text-anchor="middle" font-family="Inter,Arial,sans-serif">${esc(t)}</text></g>`}
-  return s+dots.join("")+(stage>=1?`<text x="40" y="480" font-size="34">${GR.icon[stage]}</text>`:`<text x="40" y="480" font-size="34">⛺</text>`)+"</svg>"}};
+   s+=`<g><rect x="${x.toFixed(1)}" y="${b[1].toFixed(1)}" width="${w}" height="${h}" rx="6" fill="${GC[L.k]}" stroke="${L.p===hi?"#fff":"#00000066"}" ${L.p===hi?'stroke-width="2.5"':""}/><text x="${(x+w/2).toFixed(1)}" y="${(b[1]+(ln.length>1?19:h-8)).toFixed(1)}" font-size="16" font-weight="700" fill="${L.k==="verb"?"#1a1300":"#fff"}" text-anchor="middle" font-family="Inter,Arial,sans-serif">${ln.map((t,i)=>`<tspan x="${(x+w/2).toFixed(1)}" dy="${i?18:0}">${esc(t)}</tspan>`).join("")}</text></g>`}
+  return s+dots.join("")+`<text x="40" y="480" font-size="34">${GR.icon[stage]||GR.icon[0]}</text>`+"</svg>"}};
 })();

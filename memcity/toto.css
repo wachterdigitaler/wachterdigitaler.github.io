@@ -1,0 +1,53 @@
+/* Тото (gami.js). Анимации только transform / opacity (решение 19:40); prefers-reduced-motion → статично.
+   Вспышка роста — CSS вместо grow_flash.webp (code-art e319ce6 demo/flash.css; «appear» переписан на opacity/transform). */
+.tt-wrap{margin-top:4px}
+/* #445 / hq #316: сцена строго 1:1, 358×358 без масштаба и без обрезки карты; на узком экране — вся ширина, всё ещё квадрат */
+.tt-hero{position:relative;width:min(358px,100%);aspect-ratio:1/1;margin:0 auto;border-radius:24px;overflow:hidden;background:#05030F;box-shadow:inset 0 0 0 1px #8F6BFF33}
+.tt-hero .tt-bg{position:absolute;left:50%;top:0;height:100%;transform:translateX(-50%);opacity:.55;pointer-events:none}
+.tt-hero .mapa{position:absolute;inset:0;width:100%;height:100%;border-radius:0;background:none}
+.tt-hero .mapa>rect:first-of-type{fill:#1d164899}
+.tt-pet{position:absolute;left:50%;bottom:9%;width:44%;transform:translateX(-50%);transform-origin:50% 89.5%;z-index:4;pointer-events:none}
+.tt-pet svg{width:100%;height:auto;display:block}
+.tt-pet .tt-emoji{display:block;text-align:center;font-size:64px}
+.tt-fire{position:absolute;left:12%;bottom:12%;width:16%;z-index:3;pointer-events:none}
+.tt-fire svg{width:100%;height:auto;display:block;transform-origin:50% 92%;animation:tt-flick 1.6s ease-in-out infinite alternate}
+@keyframes tt-flick{to{transform:scaleY(1.06)}}
+.tt-cap{position:absolute;left:10px;top:10px;z-index:6;display:flex;align-items:center;gap:6px;padding:6px 12px;font-size:13px;font-weight:700;white-space:nowrap;border-radius:99px;background:#0b0a1ab8;border:1px solid #ffffff1f;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+/* чип «Тото · Юнга ›» (hq #316: 44 px, правый нижний угол карты; тап → карточка) — отдельный компонент, легко поправить */
+.tt-chip{position:absolute;right:10px;bottom:10px;z-index:6;min-height:44px;display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:99px;background:#0b0a1ab8;border:1px solid #ffffff1f;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);cursor:pointer;color:#fff}
+.tt-chip .tt-av{width:36px;height:36px;border-radius:50%;overflow:hidden;background:#151833;display:grid;place-items:center;flex:none}
+.tt-chip .tt-av svg{width:150%;height:auto;margin-top:18%}
+.tt-chip b{font-size:14px;font-weight:800}.tt-chip .tt-ch{opacity:.7}
+.tt-chest{margin-top:12px;min-height:48px}
+.tt-hint{margin:6px 0 0;text-align:center;font-size:13px}
+.tt-empty{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--card);font-size:14px;text-align:center}
+.tt-hello{margin-top:12px;text-align:center}.tt-hello b{display:block;font-size:18px}.tt-hello span{font-size:14px}
+.tt-nx .bar{margin-top:10px}.tt-nx p{margin:8px 0 0;font-size:14px}
+.tt-intro{margin-top:12px}.tt-intro p{margin:6px 0 0}
+.tt-toast{position:absolute;left:10px;right:10px;top:54px;z-index:7;padding:10px 12px;border-radius:14px;font-weight:700;font-size:14px;background:#0b0a1af0;border:1px solid #27E8FF66;color:#fff;animation:tt-in .3s ease-out both}
+@keyframes tt-in{from{opacity:0;transform:translateY(-6px)}}
+/* искры радости — циан / белые, не маджента (PM #298 (4б)) */
+.tt-sparks{position:absolute;left:50%;bottom:40%;z-index:5;pointer-events:none}
+.tt-sp{position:absolute;width:7px;height:7px;border-radius:50%;background:#27E8FF;box-shadow:0 0 8px #27E8FF;opacity:0;animation:tt-sp .9s ease-out calc(var(--i)*60ms) both}
+.tt-sp:nth-child(2n){background:#fff}
+@keyframes tt-sp{0%{opacity:1;transform:translate(0,0) scale(.6)}100%{opacity:0;transform:rotate(calc(var(--i)*60deg)) translateY(-60px) scale(1)}}
+@keyframes tt-hop{40%{transform:translateX(-50%) translateY(-14%)}}
+.tt-pet.hop{animation:tt-hop .45s ease-out}
+@keyframes tt-breathe{50%{transform:translateX(-50%) scale(1,1.02)}}.tt-pet.doze{animation:tt-breathe 3.2s ease-in-out infinite}
+.tt-tiles .tile{min-height:78px}
+/* рост: сжатие 150 мс → вспышка 250 мс → проявление 300 мс (только transform/opacity) */
+.tt-flash{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:0;
+ background:radial-gradient(ellipse 48% 48% at 50% 69%,#ff2bd6f2 0,#ff2bd6cc 10%,#ff2bd699 25%,#ff2bd66b 40%,#ff2bd638 60%,#ff2bd612 80%,#ff2bd600 100%)}
+.tt-flash::after{content:"";position:absolute;inset:0;
+ background:repeating-conic-gradient(from -15deg at 50% 69%,#ff2bd600 0deg,#ff2bd600 8deg,#ff2bd666 12.5deg,#ff2bd6cc 15deg,#ff2bd666 17.5deg,#ff2bd600 22deg,#ff2bd600 30deg);
+ -webkit-mask:radial-gradient(ellipse 50% 50% at 50% 69%,#000 0,#0000 100%);mask:radial-gradient(ellipse 50% 50% at 50% 69%,#000 0,#0000 100%)}
+@keyframes tt-flash{0%,100%{opacity:0}50%{opacity:1}}.tt-flash.go{animation:tt-flash .25s ease-out both}
+@keyframes tt-squash{to{transform:translateX(-50%) scale(1.14,.84)}}.tt-pet.squash{animation:tt-squash .15s ease-in both}
+@keyframes tt-appear{from{opacity:0;transform:translateX(-50%) scale(.9)}to{opacity:1;transform:translateX(-50%) scale(1)}}.tt-pet.appear{animation:tt-appear .3s ease-out both}
+/* карточка Тото (02) */
+.tt-cardpet{position:relative;height:220px}.tt-cardpet .tt-pet{bottom:0;width:200px}
+.tt-track{display:flex;gap:6px}.tt-track>div{flex:1;text-align:center;border-radius:14px;padding:8px 2px;font-size:11px;font-weight:700;background:#ffffff0d}
+.tt-track .tt-mini{display:block;width:48px;height:48px;margin:0 auto 2px;overflow:hidden}.tt-track .tt-mini svg{width:100%;height:auto}
+.tt-track img{width:40px;height:48px;object-fit:contain;display:block;margin:0 auto 2px}
+.tt-track .cur{background:#A6FF3B22;box-shadow:0 0 0 1.5px #A6FF3B}.tt-track .lock{opacity:.6}.tt-track small{display:block;opacity:.7;font-size:10px}
+@media (prefers-reduced-motion:reduce){.tt-pet,.tt-pet.doze,.tt-fire svg,.tt-sp,.tt-toast,.tt-flash.go{animation:none!important}.tt-sp{display:none}}

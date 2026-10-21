@@ -1,6 +1,6 @@
 const API="https://wbrpcvbpipeejdnsymdz.supabase.co/functions/v1/memcity-app", BOT="fixDeutsch_bot";
 // APP_VERSION — single source for cache-bust ?v= and the label; tools/bump_version.sh updates these + index.html
-const APP_VERSION="3.8.2", APP_BUILT="20.10 21:56";
+const APP_VERSION="3.9.1", APP_BUILT="21.10 03:15";
 const verLabel=()=>`<div class="ver">Версия ${esc(APP_VERSION)}</div>`;
 const tg=window.Telegram&&Telegram.WebApp; if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#0b0b0f");tg.setBackgroundColor("#0b0b0f")}catch(e){}}
 const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
